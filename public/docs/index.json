@@ -1,0 +1,62 @@
+[
+  {
+    "slug": "getting-started",
+    "title": {
+      "zh-CN": "快速开始",
+      "zh-TW": "快速開始",
+      "en": "Getting Started",
+      "ja": "はじめに",
+      "ru": "Начало работы"
+    }
+  },
+  {
+    "slug": "oauth",
+    "title": {
+      "zh-CN": "OAuth 接入",
+      "zh-TW": "OAuth 接入",
+      "en": "OAuth Integration",
+      "ja": "OAuth 連携",
+      "ru": "Интеграция OAuth"
+    }
+  },
+  {
+    "slug": "tokens",
+    "title": {
+      "zh-CN": "访问令牌与开放 API",
+      "zh-TW": "存取權杖與開放 API",
+      "en": "Tokens & Open API",
+      "ja": "トークンとオープン API",
+      "ru": "Токены и открытый API"
+    }
+  },
+  {
+    "slug": "modules",
+    "title": {
+      "zh-CN": "模块提交与管理",
+      "zh-TW": "模組提交與管理",
+      "en": "Modules",
+      "ja": "モジュール",
+      "ru": "Модули"
+    }
+  },
+  {
+    "slug": "claims",
+    "title": {
+      "zh-CN": "归属认领",
+      "zh-TW": "歸屬認領",
+      "en": "Ownership Claims",
+      "ja": "所有権の申請",
+      "ru": "Права на модули"
+    }
+  },
+  {
+    "slug": "faq",
+    "title": {
+      "zh-CN": "常见问题",
+      "zh-TW": "常見問題",
+      "en": "FAQ",
+      "ja": "FAQ",
+      "ru": "Вопросы"
+    }
+  }
+]

@@ -1,0 +1,23 @@
+name = "erispulse-workbench"
+main = "src/worker.js"
+compatibility_date = "2026-01-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "erispulse-workbench"
+# wrangler d1 create 后把 database_id 填到下行
+database_id = "e6a2b9b1-863c-4168-804b-87f8b23f61b0"
+
+[vars]
+# 全部可选；未配置的登录方式自动隐藏
+# GITHUB_CLIENT_ID = ""
+# CODEBERG_CLIENT_ID = ""
+# YUNHU_CLIENT_ID = ""
+# SMTP_HOST = ""
+# SMTP_PORT = "465"
+# SMTP_USER = ""
