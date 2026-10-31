@@ -1,8 +1,21 @@
-# ErisPulse Workbench
+[English](README.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [Русский](README.ru.md)
 
-<p align="center"><img src="public/logo.png" alt="ErisPulse" width="240"></p>
+<div align="center">
 
-ErisPulse 统一身份中心（OAuth 2.0 Provider）与创作者工作台，部署于 Cloudflare Workers + D1。
+<img src="https://raw.githubusercontent.com/ErisPulse/ErisPulse/main/.github/assets/ErisPulseLogo.png" width="180" alt="ErisPulse-Workbench" />
+
+# ErisPulse-Workbench
+
+**ErisPulse 统一身份中心（OAuth Provider）与创作者工作台**
+
+<p>
+  <a href="https://github.com/ErisPulse/ErisPulse/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License"></a>
+  <img src="https://raw.githubusercontent.com/ErisPulse/.github/main/assets/badges/ecosystem.svg" alt="ErisPulse">
+</p>
+
+</div>
+
+---
 
 ## 部署
 
