@@ -18,6 +18,14 @@
 | `min_sdk_version` | | 最低 SDK 版本 |
 | `logo` | | https 或 data:image，≤100KB |
 
+## 編碼要求
+
+介面只接受 **UTF-8** 的 JSON 請求內容。Windows 終端預設 GBK，中文會被寫成非 UTF-8 位元組，解碼後只剩 `�`（無法還原），伺服端會直接拒絕：
+
+- 錯誤 `415 ENCODING_INVALID`，`message` 會指出出問題的欄位
+- 修正：終端先執行 `chcp 65001`，或把請求內容存成 UTF-8 檔案後用 `--data-binary @body.json` 送出
+- CI 端同樣有防護：寫入 `packages.json` 前會檢查，含亂碼則整次提交失敗
+
 ## 編輯
 
 模組詳情頁 → 修改任意欄位 →「儲存修改」。所有者可改全部欄位；`verified` 僅管理員可改。

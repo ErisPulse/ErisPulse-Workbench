@@ -18,6 +18,14 @@
 | `min_sdk_version` | | 最小 SDK バージョン |
 | `logo` | | https または data:image、100KB 以下 |
 
+## 文字コード
+
+API は **UTF-8** の JSON のみ受け付けます。Windows のターミナルは既定が GBK のため、中国語が非 UTF-8 バイトで送られ `�`（復元不可）になります。そのようなリクエストは拒否されます。
+
+- `415 ENCODING_INVALID` を返し、`message` に該当フィールドを表示
+- 対処：`chcp 65001` を実行するか、本文を UTF-8 で保存して `--data-binary @body.json` で送信
+- CI でも `packages.json` 書き込み前に同じ検証を行います
+
 ## 編集
 
 詳細ページ → 変更 →「変更を保存」。所有者は全フィールドを編集可、`verified` は管理者のみ。

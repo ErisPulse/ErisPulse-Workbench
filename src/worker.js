@@ -44,6 +44,41 @@ const fail = (code, status, message) => json({ error: code, message: message || 
 const now = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
 
+// ── 编码体检 ──
+// Windows 终端默认 GBK：中文会以 GBK 字节发上来，JSON.parse 只会得到不可逆的 U+FFFD，
+// 一旦入库/入索引就再也还原不回来。所以写入前必须在字节层拦截，而不是事后修。
+const MOJIBAKE_RE = /\ufffd|锟斤拷|ï¿½/;
+const ENCODING_HINT = '请求体必须是 UTF-8，检测到 GBK 等非 UTF-8 字节。Windows 终端请先执行 chcp 65001，'
+    + '或将文件/参数以 UTF-8 保存后重试。 Request body must be UTF-8 (invalid UTF-8 / GBK bytes detected).';
+
+/** 严格解码一段字节：非 UTF-8 直接抛错，绝不静默替换成 U+FFFD */
+function decodeUtf8Strict(buf) {
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(buf);
+    if (MOJIBAKE_RE.test(text)) throw new Error('mojibake');
+    return text;
+}
+
+/** 写请求体检：用 clone() 读，不消耗原 body；返回 Response 表示拒绝，null 表示放行 */
+async function rejectBadEncoding(request) {
+    const ct = (request.headers.get('Content-Type') || '').toLowerCase();
+    if (ct && !ct.includes('json')) return null;
+    let buf;
+    try { buf = await request.clone().arrayBuffer(); } catch (e) { return null; }
+    if (buf.byteLength > 2 * 1024 * 1024) return null;
+    let text;
+    try { text = decodeUtf8Strict(buf); }
+    catch (e) {
+        const fm = new TextDecoder('utf-8').decode(buf).match(/"([A-Za-z0-9_]+)"\s*:\s*"[^"]*[\ufffd]/);
+        return fail('ENCODING_INVALID', 415, ENCODING_HINT + (fm ? ' （字段 ' + fm[1] + '）' : ''));
+    }
+    return null;
+}
+
+/** 上游 packages.json 严格解码：仓库里混进 GBK 时宁可不缓存，也不污染快照 */
+async function readPackages(resp) {
+    return JSON.parse(decodeUtf8Strict(await resp.arrayBuffer()));
+}
+
 function randomHex(bytes) {
     const a = new Uint8Array(bytes);
     crypto.getRandomValues(a);
@@ -370,7 +405,8 @@ function opTargetMet(packages, op) {
  * 对账：拉最新快照，把已达标的 pending op 结清；超 30 分钟仍未体现的标 stale。
  * 有 15 秒节流，避免每次列表请求都打 GitHub。
  */
-async function reconcilePending(db) {
+async function reconcilePending(env) {
+    const db = env.DB;
     const pending = await db.prepare("SELECT * FROM module_ops WHERE status IN ('pending','stale') ORDER BY id ASC LIMIT 200").all();
     const ops = pending.results || [];
     if (!ops.length) return;
@@ -379,13 +415,15 @@ async function reconcilePending(db) {
     const fresh = last && Date.now() - new Date(last.updated_at).getTime() < 15000;
     if (fresh) {
         const row = await db.prepare("SELECT value FROM repo_cache WHERE key = 'packages'").first();
-        try { packages = JSON.parse(row.value); } catch (e) { packages = null; }
+        try {
+            if (!MOJIBAKE_RE.test(row.value)) packages = JSON.parse(row.value);
+        } catch (e) { packages = null; }
     }
     if (!packages) {
         try {
             const resp = await fetch(packagesUrl(), { cf: { cacheTtl: 0 } });
             if (!resp.ok) return;
-            packages = await resp.json();
+            packages = await readPackages(resp);
             await db.prepare("INSERT INTO repo_cache (key, value, updated_at) VALUES ('packages', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2")
                 .bind(JSON.stringify(packages), now()).run();
         } catch (e) { return; }
@@ -405,12 +443,15 @@ async function reconcilePending(db) {
 
 async function getCachedPackages(db) {
     const row = await db.prepare("SELECT value FROM repo_cache WHERE key = 'packages'").first();
-    if (row) {
+    if (row && !MOJIBAKE_RE.test(row.value)) {
         try { return { packages: JSON.parse(row.value), fromCache: true }; } catch (e) {}
     }
+    // 缓存缺失或已损坏（历史 GBK 数据）：回源，坏快照绝不继续下发
     const resp = await fetch('https://raw.githubusercontent.com/ErisPulse/ErisPulse-ModuleRepo/2x/packages.json', { cf: { cacheTtl: 30 } });
-    if (!resp.ok) return { packages: null, fromCache: false };
-    const packages = await resp.json();
+    if (!resp.ok) return { packages: null, fromCache: false, reason: 'packages.json 获取失败（HTTP ' + resp.status + '）' };
+    let packages;
+    try { packages = await readPackages(resp); }
+    catch (e) { return { packages: null, fromCache: false, reason: 'packages.json 不是合法 UTF-8 或含乱码，已拒绝缓存' }; }
     await db.prepare("INSERT INTO repo_cache (key, value, updated_at) VALUES ('packages', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2")
         .bind(JSON.stringify(packages), now()).run().catch(() => {});
     return { packages: packages, fromCache: false };
@@ -443,7 +484,7 @@ function scheduleSync(env, ctx, me, ops) {
         try {
             const resp = await fetch(packagesUrl(), { cf: { cacheTtl: 0 } });
             if (resp.ok) {
-                const packages = await resp.json();
+                const packages = await readPackages(resp);
                 await db.prepare("INSERT INTO repo_cache (key, value, updated_at) VALUES ('packages', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2")
                     .bind(JSON.stringify(packages), now()).run();
                 for (const op of ops) {
@@ -464,12 +505,12 @@ function scheduleSync(env, ctx, me, ops) {
 async function listModules(env, request) {
     const db = env.DB;
     await ensureTables(db);
-    await reconcilePending(db);   // 刷新即对账：pending op 达标则结清，避免刷新后状态「回退」
+    await reconcilePending(env);   // 刷新即对账：pending op 达标则结清，避免刷新后状态「回退」
     let packages = null;
     let stale = false;
     const cached = await getCachedPackages(db);
     if (cached.packages) { packages = cached.packages; stale = cached.fromCache; }
-    else return { error: fail('UPSTREAM', 502, 'packages.json 获取失败') };
+    else return { error: fail('UPSTREAM', 502, cached.reason || 'packages.json 获取失败') };
 
     // pending/stale ops 投影：目标状态立即呈现，并标记「处理中/待确认」
     const pending = await db.prepare("SELECT * FROM module_ops WHERE status IN ('pending','stale') ORDER BY id ASC LIMIT 100").all();
@@ -567,6 +608,12 @@ export default {
         }
 
         try {
+            // ── 编码闸门：所有写请求先按严格 UTF-8 体检（GBK 字节直接 415）──
+            if (method === 'POST' || method === 'PUT' || method === 'PATCH') {
+                const bad = await rejectBadEncoding(request);
+                if (bad) return bad;
+            }
+
             // ── 公开元端点（无需登录；供生态服务与健康检查使用）──
             if (path === '/api/health' && method === 'GET') {
                 let dbOk = false;
@@ -595,7 +642,7 @@ export default {
                         ['POST', '/api/tokens/:id/revoke'],
                         ['GET', '/api/clients'], ['POST', '/api/clients'], ['POST', '/api/clients/:id/(delete|secret)'],
                     ],
-                    errors: { TOTP_REQUIRED: 428, AUTH_REQUIRED: 401, FORBIDDEN: 403 },
+                    errors: { TOTP_REQUIRED: 428, AUTH_REQUIRED: 401, FORBIDDEN: 403, ENCODING_INVALID: 415 },
                 });
             }
             const mu = path.match(/^\/api\/users\/(u_[a-f0-9]+)$/);
@@ -608,6 +655,7 @@ export default {
             if (path === '/api/modules/stats' && method === 'GET') {
                 // 生态统计：总数/验证分布/类型分布/分类分布/热门标签（面板与第三方可用）
                 const r = await listModules(env, request);
+                if (r.error) return r.error;
                 const data = await r.json().catch(() => ({}));
                 const mods = data.modules || [];
                 const byType = {}, byCat = {}, tagCount = {};
@@ -1111,7 +1159,9 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 const type = url.searchParams.get('type') === 'adapter' ? 'adapter' : 'module';
                 let rows;
                 if (name) {
-                    const mod = (await listModules(env, request).then(r => r.json().catch(() => ({})))).modules || [];
+                    const r = await listModules(env, request);
+                    if (r.error) return r.error;
+                    const mod = (await r.json().catch(() => ({}))).modules || [];
                     const hit = mod.find(m => m.name === name && m.type === type);
                     if (!hit) return fail('NOT_FOUND', 404, '模块不存在');
                     if (!hit.mine && !isStaff(me)) return fail('FORBIDDEN', 403, '仅所有者或管理员可查看该模块的操作记录');

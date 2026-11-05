@@ -18,6 +18,14 @@
 | `min_sdk_version` | | 最低 SDK 版本 |
 | `logo` | | https 或 data:image，≤100KB |
 
+## 编码要求
+
+接口只接受 **UTF-8** 的 JSON 请求体。Windows 终端默认 GBK，中文会被写成非 UTF-8 字节，解码后只剩 `�`（不可还原），服务端会直接拒绝：
+
+- 报错 `415 ENCODING_INVALID`，`message` 会指出出问题的字段
+- 修复：终端先执行 `chcp 65001`，或把请求体存成 UTF-8 文件后用 `--data-binary @body.json` 提交
+- CI 侧同样有兜底：写入 `packages.json` 前校验，含乱码则整次提交失败
+
 ## 编辑
 
 模块详情页 → 修改任意字段 →「保存修改」。所有者可改全部字段；`verified` 字段仅管理员可改。

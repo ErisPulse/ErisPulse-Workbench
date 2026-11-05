@@ -18,6 +18,14 @@
 | `min_sdk_version` | | minimum SDK version |
 | `logo` | | https or data:image, ≤100KB |
 
+## Encoding
+
+The API only accepts **UTF-8** JSON bodies. Windows terminals default to GBK, so Chinese text is sent as non-UTF-8 bytes and decodes to unrecoverable `�` — such requests are rejected:
+
+- `415 ENCODING_INVALID`, with the offending field named in `message`
+- Fix: run `chcp 65001` first, or save the body as a UTF-8 file and send it with `--data-binary @body.json`
+- CI enforces the same rule before writing `packages.json`
+
 ## Editing
 
 Module detail → change any field → "Save Changes". Owners can edit every field; `verified` is admin-only.
