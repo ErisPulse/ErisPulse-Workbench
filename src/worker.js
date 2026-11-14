@@ -340,6 +340,21 @@ async function findOrCreateUser(db, provider, ident) {
         if (!u) throw new Error('identity points to missing user');
         return { user: u, created: false };
     }
+    // 同邮箱既有账户：不建新号，把当前身份绑定过去（否则撞 users.email
+    // UNIQUE 报 D1_ERROR）。上游 OAuth 邮箱经 provider 验证；既有账户的邮箱
+    // 须已验证才自动绑定——未验证邮箱归属不明，返回 conflict 由调用方提示
+    // 用户先用原方式登录再手动绑定
+    if (ident.email) {
+        const sameEmail = await db.prepare('SELECT * FROM users WHERE email=?1').bind(ident.email).first();
+        if (sameEmail) {
+            if (sameEmail.email_verified) {
+                await db.prepare('INSERT INTO identities (provider, provider_uid, uid) VALUES (?,?,?)').bind(provider, ident.provider_uid, sameEmail.uid).run();
+                await audit(db, sameEmail.uid, 'identity_link', sameEmail.uid, provider);
+                return { user: sameEmail, created: false };
+            }
+            return { conflict: true };
+        }
+    }
     const count = (await db.prepare('SELECT COUNT(*) AS n FROM users').first()).n;
     const uid = 'u_' + randomHex(6);
     let username = sanitizeUsername(ident.username);
@@ -348,8 +363,21 @@ async function findOrCreateUser(db, provider, ident) {
         if (!(await db.prepare('SELECT 1 FROM users WHERE username=?1').bind(username).first())) break;
         username = (username + '_' + randomHex(2)).slice(0, 24);
     }
-    await db.prepare('INSERT INTO users (uid, username, display_name, role, avatar_url, email, email_verified, created_at) VALUES (?,?,?,?,?,?,?,?)')
-        .bind(uid, username, ident.display_name || username, count === 0 ? 'admin' : 'user', ident.avatar_url, ident.email || null, ident.email ? 1 : 0, now()).run();
+    try {
+        await db.prepare('INSERT INTO users (uid, username, display_name, role, avatar_url, email, email_verified, created_at) VALUES (?,?,?,?,?,?,?,?)')
+            .bind(uid, username, ident.display_name || username, count === 0 ? 'admin' : 'user', ident.avatar_url, ident.email || null, ident.email ? 1 : 0, now()).run();
+    } catch (e) {
+        // 并发首登同邮箱竞态：另一请求已抢先建号（UNIQUE 冲突）→ 改走绑定
+        if (ident.email && /UNIQUE constraint failed: users\.email/i.test(String(e.message || e))) {
+            const winner = await db.prepare('SELECT * FROM users WHERE email=?1').bind(ident.email).first();
+            if (winner && winner.email_verified) {
+                await db.prepare('INSERT OR IGNORE INTO identities (provider, provider_uid, uid) VALUES (?,?,?)').bind(provider, ident.provider_uid, winner.uid).run();
+                await audit(db, winner.uid, 'identity_link', winner.uid, provider);
+                return { user: winner, created: false };
+            }
+        }
+        throw e;
+    }
     await db.prepare('INSERT INTO identities (provider, provider_uid, uid) VALUES (?,?,?)').bind(provider, ident.provider_uid, uid).run();
     return { user: await db.prepare('SELECT * FROM users WHERE uid=?1').bind(uid).first(), created: true };
 }
@@ -790,7 +818,9 @@ export default {
                 try {
                     const ident = await upstreamIdentity(env, m[1], b.access_token || b.code, !!b.access_token);
                     if (!ident) return fail('OAUTH_UNCONFIGURED', 503, '该登录方式未配置');
-                    const { user } = await findOrCreateUser(db, m[1], ident);
+                    const res = await findOrCreateUser(db, m[1], ident);
+                    if (res.conflict) return fail('EMAIL_TAKEN', 409, '该邮箱已属于其他账户且未验证——请先用原方式登录，再在「账号设置」中绑定当前登录方式');
+                    const { user } = res;
                     await audit(db, user.uid, 'login', user.uid, m[1]);
                     return json({ token: await createSession(db, user.uid), user: publicUser(user) });
                 } catch (e) {
