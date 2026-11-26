@@ -64,7 +64,7 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
             desc: '为已发布的模块申请免费托管域名：plugin-<前缀>.erisdev.com',
             apply: '申请新域名', mode: '接入方式',
             modeGit: '仓库分支（推荐）', hintGit: '指定 git 仓库与分支，分支内容直接作为站点展示，支持 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
-            modeUpload: '上传静态站点（zip ≤5MB）', hintUpload: '上传 zip 包（≤5MB），由平台 R2 直接托管，无需自己的服务器', pickZip: '选择站点 zip 包', reupload: '重新上传', errZipSize: 'zip 需 ≤5MB',
+            modeUpload: '上传静态站点（zip ≤5MB）', hintUpload: '上传 zip 包（≤5MB），由平台 R2 直接托管，无需自己的服务器', pickZip: '选择站点 zip 包', verifyExpire: '（超过 7 天未验证将自动释放该前缀）', reupload: '重新上传', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重定向', hintRedirect: '访问时 301 跳转到你填写的 https 地址',
             modeDns: '自有服务器（高级）', hintDns: '把域名解析到你自己的服务器（CNAME / A / AAAA）',
             module: '选择模块', mineOnly: '仅限你拥有的已收录模块',
@@ -148,7 +148,7 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
             desc: '為已發布的模組申請免費託管網域：plugin-<前綴>.erisdev.com',
             apply: '申請新網域', mode: '接入方式',
             modeGit: '儲存庫分支（推薦）', hintGit: '指定 git 儲存庫與分支，分支內容直接作為站點展示，支援 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
-            modeUpload: '上傳靜態站點（zip ≤5MB）', hintUpload: '上傳 zip 包（≤5MB），由平台 R2 直接託管，無需自己的伺服器', pickZip: '選擇站點 zip 包', reupload: '重新上傳', errZipSize: 'zip 需 ≤5MB',
+            modeUpload: '上傳靜態站點（zip ≤5MB）', hintUpload: '上傳 zip 包（≤5MB），由平台 R2 直接託管，無需自己的伺服器', pickZip: '選擇站點 zip 包', verifyExpire: '（超過 7 天未驗證將自動釋放該前綴）', reupload: '重新上傳', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重新導向', hintRedirect: '存取時 301 轉址到你填寫的 https 位址',
             modeDns: '自有伺服器（進階）', hintDns: '把網域解析到你自己的伺服器（CNAME / A / AAAA）',
             module: '選擇模組', mineOnly: '僅限你擁有的已收錄模組',
@@ -232,7 +232,7 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
             desc: 'Request a free hosted domain for your published module: plugin-<label>.erisdev.com',
             apply: 'New Domain', mode: 'Integration Mode',
             modeGit: 'Repo Branch (Recommended)', hintGit: 'Serve a git repo branch directly as the site — GitHub, Codeberg, self-hosted Gitea/Forgejo and GitLab supported',
-            modeUpload: 'Upload Static Site (zip ≤5MB)', hintUpload: 'Upload a zip (≤5MB); hosted on platform R2 — no server needed', pickZip: 'Pick site zip', reupload: 'Re-upload', errZipSize: 'zip must be ≤5MB',
+            modeUpload: 'Upload Static Site (zip ≤5MB)', hintUpload: 'Upload a zip (≤5MB); hosted on platform R2 — no server needed', pickZip: 'Pick site zip', verifyExpire: '(unverified labels are released after 7 days)', reupload: 'Re-upload', errZipSize: 'zip must be ≤5MB',
             modeRedirect: 'Redirect', hintRedirect: '301-redirect visitors to an https URL you provide',
             modeDns: 'Own Server (Advanced)', hintDns: 'Point the domain at your own server (CNAME / A / AAAA)',
             module: 'Select Module', mineOnly: 'Only your registered modules',
@@ -316,7 +316,7 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
             desc: '公開済みモジュールに無料のホストドメインを申請：plugin-<プレフィックス>.erisdev.com',
             apply: '新規ドメイン申請', mode: '接続方式',
             modeGit: 'リポジトリ分支（推奨）', hintGit: 'git リポジトリのブランチ内容をそのままサイトとして表示。GitHub / Codeberg / 自前 Gitea・Forgejo / GitLab に対応',
-            modeUpload: '静的サイト更新（zip ≤5MB）', hintUpload: 'zip（≤5MB）をアップロードするとプラットフォームの R2 で直接ホストされます', pickZip: 'サイト zip を選択', reupload: '再アップロード', errZipSize: 'zip は 5MB 以下',
+            modeUpload: '静的サイト更新（zip ≤5MB）', hintUpload: 'zip（≤5MB）をアップロードするとプラットフォームの R2 で直接ホストされます', pickZip: 'サイト zip を選択', verifyExpire: '（7 日間未検証のプレフィックスは自動解放されます）', reupload: '再アップロード', errZipSize: 'zip は 5MB 以下',
             modeRedirect: 'リダイレクト', hintRedirect: 'アクセス時に入力した https アドレスへ 301 転送',
             modeDns: '自前サーバー（上級）', hintDns: 'ドメインを自分のサーバーへ解決（CNAME / A / AAAA）',
             module: 'モジュールを選択', mineOnly: '自分が所有する登録済みモジュールのみ',
@@ -400,7 +400,7 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
             desc: 'Бесплатный домен для опубликованного модуля: plugin-<метка>.erisdev.com',
             apply: 'Новый домен', mode: 'Способ подключения',
             modeGit: 'Ветка репозитория (рекомендуется)', hintGit: 'Содержимое ветки git-репозитория публикуется как сайт — GitHub, Codeberg, свои Gitea/Forgejo и GitLab',
-            modeUpload: 'Загрузить статический сайт (zip ≤5MB)', hintUpload: 'Загрузите zip (≤5MB) — хостинг на R2 платформы, свой сервер не нужен', pickZip: 'Выберите zip сайта', reupload: 'Перезагрузить', errZipSize: 'zip должен быть ≤5MB',
+            modeUpload: 'Загрузить статический сайт (zip ≤5MB)', hintUpload: 'Загрузите zip (≤5MB) — хостинг на R2 платформы, свой сервер не нужен', pickZip: 'Выберите zip сайта', verifyExpire: '(неподтверждённые метки освобождаются через 7 дней)', reupload: 'Перезагрузить', errZipSize: 'zip должен быть ≤5MB',
             modeRedirect: 'Перенаправление', hintRedirect: '301-редирект на указанный https-адрес',
             modeDns: 'Свой сервер (расширенный)', hintDns: 'Направить домен на свой сервер (CNAME / A / AAAA)',
             module: 'Выберите модуль', mineOnly: 'Только ваши зарегистрированные модули',
@@ -1229,7 +1229,7 @@ async function viewDomains(v) {
                 <div class="field"><label>${esc(dm('module'))} *</label><select id="dm-module"></select><div class="hint">${esc(dm('mineOnly'))}</div></div>
                 <div class="field"><label>${esc(dm('mode'))}</label><select id="dm-mode">
                     <option value="git">${esc(dm('modeGit'))}</option>
-                    <option value="upload">${esc(dm('modeUpload'))}</option>
+                    ${/* 上传模式暂未开放：开放时恢复此行 <option value="upload">${esc(dm('modeUpload'))}</option> */ ''}
                     <option value="redirect">${esc(dm('modeRedirect'))}</option>
                     <option value="dns">${esc(dm('modeDns'))}</option>
                 </select><div class="hint" id="dm-mode-hint"></div></div>
@@ -1396,6 +1396,11 @@ async function viewDomains(v) {
         return `<span class="badge ${cls}">${esc(dm(key))}</span>`;
     };
     const modeLabel = m => m === 'git' ? dm('modeGit') : m === 'redirect' ? dm('modeRedirect') : dm('modeDns');
+    // 卡片目标源：redirect=目标 URL；dns=记录；git=仓库@分支；upload=体积
+    const rowTargetText = r => r.mode === 'redirect' ? (r.target_url || '') 
+        : r.mode === 'dns' ? [r.dns_type, r.dns_value].filter(Boolean).join(' ')
+        : r.mode === 'git' ? [r.git_repo, r.git_branch].filter(Boolean).join('@')
+        : r.mode === 'upload' && r.r2_bytes ? Math.round(r.r2_bytes / 1024) + 'KB' : '';
     const listEl = $('#dm-list');
     const allBtn = $('#dm-all');
     if (allBtn) allBtn.onclick = () => { S.domAll = !S.domAll; loadView(); };
@@ -1410,6 +1415,7 @@ async function viewDomains(v) {
                 <a href="https://${esc(row.fqdn)}" target="_blank" rel="noopener" class="mono" style="font-weight:600;font-size:14px;color:inherit">${esc(row.fqdn)}</a>
                 ${statusBadge(row.status)}
                 <span class="muted" style="font-size:12px">${esc(modeLabel(row.mode))} · ${esc(row.module_name)} (${row.module_type})${staff() && domData.all && row.owner_username ? ' · @' + esc(row.owner_username) : ''}</span>
+                ${rowTargetText(row) ? `<span class="mono muted" style="font-size:11px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(rowTargetText(row))}</span>` : ''}
                 <span style="flex:1"></span>
                 ${row.mode === 'upload' && row.status !== 'disabled' ? `<button class="btn ghost sm" data-dm-reup="${esc(row.label)}">${esc(dm('reupload'))}</button><input type="file" accept=".zip" hidden data-dm-file="${esc(row.label)}">` : ''}
                 ${row.status === 'active' || row.status === 'paused' ? `<button class="btn ghost sm" data-dm-act="pause" data-fqdn="${esc(row.label)}">${esc(row.status === 'active' ? dm('pause') : dm('resume'))}</button>` : ''}
@@ -1417,7 +1423,7 @@ async function viewDomains(v) {
             </div>
             ${verifying ? `<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line,#e5e8ec)">
                 <b style="font-size:13px">${esc(dm('verifyTitle'))}</b>
-                <div class="muted" style="font-size:12px;margin:6px 0">${esc(row.mode === 'git' ? dm('verifyGit') : dm('verifyDns'))}</div>
+                <div class="muted" style="font-size:12px;margin:6px 0">${esc(row.mode === 'git' ? dm('verifyGit') : dm('verifyDns'))} ${esc(dm('verifyExpire'))}</div>
                 ${row.mode === 'dns' ? `<div class="mono muted" style="font-size:12px;margin-bottom:6px">https://${esc(row.fqdn)}/.well-known/erisdev-verify.txt</div>` : ''}
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
                     <code class="mono" style="background:rgba(58,148,208,.1);padding:4px 10px;border-radius:8px;user-select:all">${esc(row.verify_code)}</code>

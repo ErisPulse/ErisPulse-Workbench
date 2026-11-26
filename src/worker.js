@@ -42,6 +42,7 @@ const DOMAIN_BASE = 'erisdev.com';
 const DOMAIN_LABEL_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 const DOMAIN_BRANCH_RE = /^[A-Za-z0-9._\-/]{1,120}$/;
 const DOMAIN_LIMIT_PER_MODULE = 2;
+const DOMAIN_VERIFY_EXPIRE_DAYS = 7;            // 验证期上限：超时自动释放前缀供他人申请
 const DOMAIN_LIMIT_PER_USER = 10;
 // 保留名：前缀已隔离官方子域，此表仅防易混淆命名
 const DOMAIN_RESERVED = new Set(['www', 'api', 'admin', 'mail', 'smtp', 'imap', 'pop', 'ns1', 'ns2',
@@ -808,6 +809,8 @@ async function domainUploadCommonChecks(db, env, me, body, file) {
 }
 
 async function handleDomainUpload(request, env, db, me) {
+    // 上传模式暂未开放：仅管理员可先内测
+    if (!isStaff(me)) return freason('FORBIDDEN', 403, 'not_released', 'upload mode is not released yet');
     const b = await request.formData().catch(() => null);
     if (!b) return freason('VALIDATION', 400, 'bad_form', 'multipart form required');
     const file = b.get('file');
@@ -1473,6 +1476,17 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
             // 我的域名列表；staff 可 ?all=1 查全部（滥用处置前先看全局）
             if (path === '/api/domains' && method === 'GET') {
                 await ensureTables(db);
+                // 验证过期懒清扫：超期未验证的行直接释放（CF 记录/路由一并回收），前缀重新可申请
+                {
+                    const cutoff = new Date(Date.now() - DOMAIN_VERIFY_EXPIRE_DAYS * 86400 * 1000).toISOString();
+                    const stale = await db.prepare("SELECT * FROM module_domains WHERE status = 'verifying' AND created_at < ?1 LIMIT 50").bind(cutoff).all();
+                    for (const row of (stale.results || [])) {
+                        if (row.route_id && env.CF_DNS_TOKEN) { try { await cfRouteApi(env, 'DELETE', null, row.route_id); } catch (e) { /* 忽略 */ } }
+                        if (row.dns_record_id && env.CF_DNS_TOKEN) { try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ } }
+                        await db.prepare('DELETE FROM module_domains WHERE fqdn = ?1').bind(row.fqdn).run();
+                        await audit(db, null, 'domain.expire', row.fqdn, row.uid);
+                    }
+                }
                 if (url.searchParams.get('all') === '1' && isStaff(me)) {
                     const rows = await db.prepare('SELECT d.*, u.username AS owner_username FROM module_domains d LEFT JOIN users u ON u.uid = d.uid ORDER BY d.created_at DESC LIMIT 200').all();
                     return json({ domains: rows.results, all: true });
@@ -1643,6 +1657,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
             if (du && method === 'POST') {
                 const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(du[1])).first();
                 if (!row) return freason('NOT_FOUND', 404, 'domain_missing', 'domain not found');
+                if (!isStaff(me)) return freason('FORBIDDEN', 403, 'not_released', 'upload mode is not released yet');
                 if (row.mode !== 'upload' || !row.r2_bucket) return freason('VALIDATION', 400, 'bad_mode', 'reupload applies to uploaded sites only');
                 if (row.uid !== me.uid && !isStaff(me)) return freason('FORBIDDEN', 403, 'not_owner', 'only the owner can manage this domain');
                 if (row.status === 'disabled') return freason('FORBIDDEN', 403, 'disabled_domain', 'this domain has been disabled by an admin');
