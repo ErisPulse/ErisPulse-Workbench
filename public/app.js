@@ -12,7 +12,7 @@ function makeT() {
         welcome: '欢迎', orEmail: '或使用邮箱', fillFirst: (f) => `请填写${f}`,
         codeSent: '验证码已发送', resend: (n) => `${n}s`,
         navGroupMain: '总览', navGroupApp: '应用管理', navGroupSys: '系统',
-        nav: { dash: '数据总览', modules: '模块列表', submit: '提交新模块', users: '用户与角色', clients: '接入应用', audit: '操作日志', profile: '账号设置', activity: '生态动态', claims: '认领审核', tokens: '访问令牌', docs: '使用文档' },
+        nav: { dash: '数据总览', modules: '模块列表', submit: '提交新模块', users: '用户与角色', clients: '接入应用', audit: '操作日志', profile: '账号设置', activity: '生态动态', claims: '认领审核', tokens: '访问令牌', docs: '使用文档', domains: '托管域名' },
         navGroupOpen: '开放接口',
         navTokens: '访问令牌', navActivity: '生态动态', navClaims: '认领审核',
         tkName: '令牌名称', tkSkip2fa: '此令牌免动态码（跳过 2FA）', tkSkip2faHint: '生成需当场验证一次动态码；之后 CLI/CI 调用敏感接口不再要求 totp_code', badgeNo2fa: '免2FA', tkCreate: '生成令牌', tkOnce: '令牌仅显示一次，请立即保存', tkNone: '还没有令牌', tkLast: '最后使用', tkCreated: '创建时间', tkRevoke: '撤销', tkRevokeOk: '已撤销', tkUsage: '开放 API / CLI（epsdk push）/ 外部工具链：请求头 Authorization: Bearer epat_… 即等同你的登录态', tkCopied: '已复制',
@@ -60,6 +60,30 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
         errName: '仅字母 / 数字 / _ / -', errPackage: 'PyPI 包名仅限字母数字与 . _ -', errDesc: '描述至少 10 个字符', errRepo: '仓库需为 github.com 或 codeberg.org 地址',
         submitting: '提交中…', saving: '保存中…', unsaved: '有未提交的修改，离开将丢失。确定离开？', filled: '已自动填充', curLogo: '当前生效图标：',
         confirm: '确定', docsLoading: '加载文档…', docsMissing: '文档不存在', docsDesc: '按板块查阅：接入、令牌、模块、认领与常见问题。',
+        dm: {
+            desc: '为已发布的模块申请免费托管域名：<前缀>.plugin.erisdev.com',
+            apply: '申请新域名', mode: '接入方式',
+            modeGit: '仓库分支（推荐）', hintGit: '指定 git 仓库与分支，分支内容直接作为站点展示，支持 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
+            modeRedirect: '重定向', hintRedirect: '访问时 301 跳转到你填写的 https 地址',
+            modeDns: '自有服务器（高级）', hintDns: '把域名解析到你自己的服务器（CNAME / A / AAAA）',
+            module: '选择模块', mineOnly: '仅限你拥有的已收录模块',
+            label: '域名前缀', labelAvail: (f) => `${f}.plugin.erisdev.com 可用`,
+            platform: '仓库平台', hintSelfHost: '自建实例需公网可经 HTTPS 访问；GitHub/Codeberg 会自动识别',
+            submit: '提交申请', list: '我的域名', empty: '还没有托管域名',
+            stVerifying: '待验证', stActive: '生效中', stPaused: '已暂停', stDisabled: '已停用',
+            verify: '验证', pause: '暂停', resume: '恢复',
+            verifyTitle: '完成验证以生效',
+            verifyGit: '在仓库分支根目录放置文件 erisdev-site-verify.txt，内容为：',
+            verifyDns: '在你的服务器上让以下 URL 返回该内容（需支持 Host 为本域名的请求）：',
+            verifyBtn: '我已放置，立即验证',
+            verifyOk: '验证通过，域名已生效', verifyFail: '未读到验证内容，请确认放置位置与内容',
+            applied: '申请已提交', okActive: (f) => `域名已生效：https://${f}`,
+            errLabel: '仅限小写字母、数字与中缀连字符（2-63 位）', errRepo: '仓库需为所选平台的完整 https URL',
+            errBranch: '分支名不合法', errTarget: '需为 https:// URL', errDnsValue: '记录值不合法',
+            hintDnsServe: '目标服务器需能响应 Host 为本域名的请求；解析记录由平台自动创建并代理',
+            limits: (m, u) => `每模块最多 ${m} 个，每账户最多 ${u} 个`,
+            owner: '所有者', allDomains: '全部域名（管理员）',
+        },
     },
     'zh-TW': {
         tagline: 'ErisPulse 統一身分中心與創作者工作台',
@@ -69,7 +93,7 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
         welcome: '歡迎', orEmail: '或使用郵箱', fillFirst: (f) => `請填寫${f}`,
         codeSent: '驗證碼已發送', resend: (n) => `${n}s`,
         navGroupMain: '總覽', navGroupApp: '應用管理', navGroupSys: '系統',
-        nav: { dash: '數據總覽', modules: '模組列表', submit: '提交新模組', users: '使用者與角色', clients: '接入應用', audit: '操作日誌', profile: '帳號設定', activity: '生態動態', claims: '認領審核', tokens: '存取權杖', docs: '使用文件' },
+        nav: { dash: '數據總覽', modules: '模組列表', submit: '提交新模組', users: '使用者與角色', clients: '接入應用', audit: '操作日誌', profile: '帳號設定', activity: '生態動態', claims: '認領審核', tokens: '存取權杖', docs: '使用文件', domains: '託管網域' },
         navGroupOpen: '開放接口',
         navTokens: '存取權杖', navActivity: '生態動態', navClaims: '認領審核',
         tkName: '權杖名稱', tkSkip2fa: '此權杖免動態碼（跳過 2FA）', tkSkip2faHint: '生成需當場驗證一次動態碼；之後 CLI/CI 呼叫敏感介面不再要求 totp_code', badgeNo2fa: '免2FA', tkCreate: '生成權杖', tkOnce: '權杖僅顯示一次，請立即保存', tkNone: '還沒有權杖', tkLast: '最後使用', tkCreated: '建立時間', tkRevoke: '撤銷', tkRevokeOk: '已撤銷', tkUsage: '開放 API / CLI（epsdk push）/ 外部工具鏈：請求頭 Authorization: Bearer epat_… 即等同你的登入態', tkCopied: '已複製',
@@ -117,6 +141,30 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
         errName: '僅字母 / 數字 / _ / -', errPackage: 'PyPI 套件名僅限字母數字與 . _ -', errDesc: '描述至少 10 個字元', errRepo: '倉庫需為 github.com 或 codeberg.org 地址',
         submitting: '提交中…', saving: '儲存中…', unsaved: '有未提交的修改，離開將遺失。確定離開？', filled: '已自動填充', curLogo: '目前生效圖示：',
         confirm: '確定', docsLoading: '載入文件…', docsMissing: '文件不存在', docsDesc: '依板塊查閱：接入、權杖、模組、認領與常見問題。',
+        dm: {
+            desc: '為已發布的模組申請免費託管網域：<前綴>.plugin.erisdev.com',
+            apply: '申請新網域', mode: '接入方式',
+            modeGit: '儲存庫分支（推薦）', hintGit: '指定 git 儲存庫與分支，分支內容直接作為站點展示，支援 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
+            modeRedirect: '重新導向', hintRedirect: '存取時 301 轉址到你填寫的 https 位址',
+            modeDns: '自有伺服器（進階）', hintDns: '把網域解析到你自己的伺服器（CNAME / A / AAAA）',
+            module: '選擇模組', mineOnly: '僅限你擁有的已收錄模組',
+            label: '網域前綴', labelAvail: (f) => `${f}.plugin.erisdev.com 可用`,
+            platform: '儲存庫平台', hintSelfHost: '自建實例需公網可經 HTTPS 存取；GitHub/Codeberg 會自動識別',
+            submit: '提交申請', list: '我的網域', empty: '還沒有託管網域',
+            stVerifying: '待驗證', stActive: '生效中', stPaused: '已暫停', stDisabled: '已停用',
+            verify: '驗證', pause: '暫停', resume: '恢復',
+            verifyTitle: '完成驗證以生效',
+            verifyGit: '在儲存庫分支根目錄放置檔案 erisdev-site-verify.txt，內容為：',
+            verifyDns: '在你的伺服器上讓以下 URL 回傳該內容（需支援 Host 為本網域的請求）：',
+            verifyBtn: '我已放置，立即驗證',
+            verifyOk: '驗證通過，網域已生效', verifyFail: '未讀到驗證內容，請確認放置位置與內容',
+            applied: '申請已提交', okActive: (f) => `網域已生效：https://${f}`,
+            errLabel: '僅限小寫字母、數字與中綴連字號（2-63 位）', errRepo: '儲存庫需為所選平台的完整 https URL',
+            errBranch: '分支名不合法', errTarget: '需為 https:// URL', errDnsValue: '記錄值不合法',
+            hintDnsServe: '目標伺服器需能回應 Host 為本網域的請求；解析記錄由平台自動建立並代理',
+            limits: (m, u) => `每模組最多 ${m} 個，每帳戶最多 ${u} 個`,
+            owner: '所有者', allDomains: '全部網域（管理員）',
+        },
     },
     en: {
         tagline: 'ErisPulse identity center & creator workbench',
@@ -126,7 +174,7 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
         welcome: 'Welcome', orEmail: 'or use email', fillFirst: (f) => `Enter your ${f}`,
         codeSent: 'Code sent', resend: (n) => `${n}s`,
         navGroupMain: 'Overview', navGroupApp: 'Apps', navGroupSys: 'System',
-        nav: { dash: 'Dashboard', modules: 'Module List', submit: 'Submit Module', users: 'Users & Roles', clients: 'OAuth Clients', audit: 'Audit Log', profile: 'Account', activity: 'Ecosystem', claims: 'Ownership Claims', tokens: 'Access Tokens', docs: 'Documentation' },
+        nav: { dash: 'Dashboard', modules: 'Module List', submit: 'Submit Module', users: 'Users & Roles', clients: 'OAuth Clients', audit: 'Audit Log', profile: 'Account', activity: 'Ecosystem', claims: 'Ownership Claims', tokens: 'Access Tokens', docs: 'Documentation', domains: 'Hosted Domains' },
         navGroupOpen: 'Open API',
         navTokens: 'Access Tokens', navActivity: 'Ecosystem', navClaims: 'Ownership Claims',
         tkName: 'Token name', tkSkip2fa: 'Skip 2FA for this token', tkSkip2faHint: 'Creating it requires a live code once; afterwards CLI/CI calls to sensitive endpoints need no totp_code', badgeNo2fa: 'no-2FA', tkCreate: 'Generate Token', tkOnce: 'Shown only once — save it now', tkNone: 'No tokens yet', tkLast: 'Last used', tkCreated: 'Created', tkRevoke: 'Revoke', tkRevokeOk: 'Revoked', tkUsage: 'Open API / CLI (epsdk push) / external tools: header Authorization: Bearer epat_… acts as your session', tkCopied: 'Copied',
@@ -174,6 +222,30 @@ fTotpHint: 'This account has 2FA enabled; actions require an authenticator code'
         errName: 'Letters / digits / _ / - only', errPackage: 'PyPI names allow letters, digits and . _ -', errDesc: 'Description needs at least 10 characters', errRepo: 'Repository must be on github.com or codeberg.org',
         submitting: 'Submitting…', saving: 'Saving…', unsaved: 'You have unsaved changes. Leave anyway?', filled: 'Auto-filled', curLogo: 'Current logo:',
 confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', docsDesc: 'Browse by topic: integration, tokens, modules, claims and FAQ.',
+        dm: {
+            desc: 'Request a free hosted domain for your published module: <label>.plugin.erisdev.com',
+            apply: 'New Domain', mode: 'Integration Mode',
+            modeGit: 'Repo Branch (Recommended)', hintGit: 'Serve a git repo branch directly as the site — GitHub, Codeberg, self-hosted Gitea/Forgejo and GitLab supported',
+            modeRedirect: 'Redirect', hintRedirect: '301-redirect visitors to an https URL you provide',
+            modeDns: 'Own Server (Advanced)', hintDns: 'Point the domain at your own server (CNAME / A / AAAA)',
+            module: 'Select Module', mineOnly: 'Only your registered modules',
+            label: 'Domain Label', labelAvail: (f) => `${f}.plugin.erisdev.com is available`,
+            platform: 'Repository Platform', hintSelfHost: 'Self-hosted instances must be publicly reachable over HTTPS; GitHub/Codeberg URLs are auto-detected',
+            submit: 'Submit Request', list: 'My Domains', empty: 'No hosted domains yet',
+            stVerifying: 'Verifying', stActive: 'Active', stPaused: 'Paused', stDisabled: 'Disabled',
+            verify: 'Verify', pause: 'Pause', resume: 'Resume',
+            verifyTitle: 'Verify to activate',
+            verifyGit: 'Place a file named erisdev-site-verify.txt at the branch root with this content:',
+            verifyDns: 'Serve this content at the following URL on your server (requests carry Host of this domain):',
+            verifyBtn: 'Placed — verify now',
+            verifyOk: 'Verified — domain is now active', verifyFail: 'Verification content not found, check placement and content',
+            applied: 'Request submitted', okActive: (f) => `Domain active: https://${f}`,
+            errLabel: 'Lowercase letters, digits and inner hyphens only (2-63 chars)', errRepo: 'Repository must be a full https URL for the selected platform',
+            errBranch: 'Invalid branch name', errTarget: 'Must be an https:// URL', errDnsValue: 'Invalid record value',
+            hintDnsServe: 'Your server must answer requests with this domain as Host; the DNS record is created and proxied by the platform',
+            limits: (m, u) => `Up to ${m} per module and ${u} per account`,
+            owner: 'Owner', allDomains: 'All domains (admin)',
+        },
     },
     ja: {
         tagline: 'ErisPulse 統一 ID センター & クリエイターワークベンチ',
@@ -183,7 +255,7 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
         welcome: 'ようこそ', orEmail: 'またはメール', fillFirst: (f) => `${f}を入力してください`,
         codeSent: 'コードを送信しました', resend: (n) => `${n}s`,
         navGroupMain: '概要', navGroupApp: 'アプリ管理', navGroupSys: 'システム',
-        nav: { dash: 'ダッシュボード', modules: 'モジュール一覧', submit: '新規モジュール', users: 'ユーザーとロール', clients: '接続アプリ', audit: '操作ログ', profile: 'アカウント', activity: 'エコシステム', claims: '認定審査', tokens: 'アクセストークン', docs: 'ドキュメント' },
+        nav: { dash: 'ダッシュボード', modules: 'モジュール一覧', submit: '新規モジュール', users: 'ユーザーとロール', clients: '接続アプリ', audit: '操作ログ', profile: 'アカウント', activity: 'エコシステム', claims: '認定審査', tokens: 'アクセストークン', docs: 'ドキュメント', domains: 'ホストドメイン' },
         navGroupOpen: 'オープン API',
         navTokens: 'アクセストークン', navActivity: 'エコシステム', navClaims: '認定審査',
         tkName: 'トークン名', tkSkip2fa: 'このトークンは 2FA 不要', tkSkip2faHint: '作成時に一度だけコードが必要。以後の CLI/CI からの重要操作は totp_code 不要', badgeNo2fa: '2FA不要', tkCreate: '生成', tkOnce: 'トークンは一度しか表示されません。今すぐ保存', tkNone: 'トークンはまだありません', tkLast: '最終使用', tkCreated: '作成日時', tkRevoke: '失効', tkRevokeOk: '失効しました', tkUsage: 'オープン API / CLI（epsdk push）/ 外部ツール：ヘッダー Authorization: Bearer epat_… でログイン状態と同等', tkCopied: 'コピーしました',
@@ -231,6 +303,30 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
         errName: '英数字と _ - のみ', errPackage: 'PyPI 名は英数字と . _ - のみ', errDesc: '説明は 10 文字以上', errRepo: 'リポジトリは github.com / codeberg.org のみ',
         submitting: '送信中…', saving: '保存中…', unsaved: '未送信の変更があります。破棄して移動しますか？', filled: '自動入力しました', curLogo: '現在のロゴ：',
         confirm: '確定', docsLoading: 'ドキュメントを読み込み中…', docsMissing: 'ドキュメントが見つかりません', docsDesc: 'トピック別：連携・トークン・モジュール・申請・FAQ。',
+        dm: {
+            desc: '公開済みモジュールに無料のホストドメインを申請：<プレフィックス>.plugin.erisdev.com',
+            apply: '新規ドメイン申請', mode: '接続方式',
+            modeGit: 'リポジトリ分支（推奨）', hintGit: 'git リポジトリのブランチ内容をそのままサイトとして表示。GitHub / Codeberg / 自前 Gitea・Forgejo / GitLab に対応',
+            modeRedirect: 'リダイレクト', hintRedirect: 'アクセス時に入力した https アドレスへ 301 転送',
+            modeDns: '自前サーバー（上級）', hintDns: 'ドメインを自分のサーバーへ解決（CNAME / A / AAAA）',
+            module: 'モジュールを選択', mineOnly: '自分が所有する登録済みモジュールのみ',
+            label: 'ドメインプレフィックス', labelAvail: (f) => `${f}.plugin.erisdev.com は利用可能`,
+            platform: 'リポジトリプラットフォーム', hintSelfHost: '自前インスタンスは HTTPS で公開到達可能である必要があります。GitHub/Codeberg は自動判別',
+            submit: '申請を送信', list: 'マイドメイン', empty: 'ホストドメインはまだありません',
+            stVerifying: '検証中', stActive: '有効', stPaused: '一時停止', stDisabled: '停止中',
+            verify: '検証', pause: '一時停止', resume: '再開',
+            verifyTitle: '検証して有効化',
+            verifyGit: 'ブランチのルートに erisdev-site-verify.txt を以下の内容で配置してください：',
+            verifyDns: 'サーバー上で以下の URL がこの内容を返すようにしてください（Host がこのドメインのリクエストに対応必須）：',
+            verifyBtn: '配置済み — 今すぐ検証',
+            verifyOk: '検証成功、ドメインが有効になりました', verifyFail: '検証内容が読み取れません。配置場所と内容を確認してください',
+            applied: '申請を送信しました', okActive: (f) => `ドメインが有効：https://${f}`,
+            errLabel: '小文字英字・数字・内部ハイフンのみ（2-63 文字）', errRepo: '選択したプラットフォームの完全な https URL を指定してください',
+            errBranch: 'ブランチ名が不正です', errTarget: 'https:// URL を指定してください', errDnsValue: 'レコード値が不正です',
+            hintDnsServe: 'サーバーは Host がこのドメインのリクエストに応答する必要があります。DNS レコードはプラットフォームが作成・代理します',
+            limits: (m, u) => `モジュールごと最大 ${m} 件、アカウントごと最大 ${u} 件`,
+            owner: '所有者', allDomains: '全ドメイン（管理者）',
+        },
     },
     ru: {
         tagline: 'Центр идентификации и рабочая станция ErisPulse',
@@ -240,7 +336,7 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
         welcome: 'Добро пожаловать', orEmail: 'или по почте', fillFirst: (f) => `Введите: ${f}`,
         codeSent: 'Код отправлен', resend: (n) => `${n}s`,
         navGroupMain: 'Обзор', navGroupApp: 'Приложения', navGroupSys: 'Система',
-        nav: { dash: 'Обзор', modules: 'Список модулей', submit: 'Новый модуль', users: 'Пользователи', clients: 'OAuth-клиенты', audit: 'Журнал', profile: 'Аккаунт', activity: 'Экосистема', claims: 'Заявки на владение', tokens: 'Токены доступа', docs: 'Документация' },
+        nav: { dash: 'Обзор', modules: 'Список модулей', submit: 'Новый модуль', users: 'Пользователи', clients: 'OAuth-клиенты', audit: 'Журнал', profile: 'Аккаунт', activity: 'Экосистема', claims: 'Заявки на владение', tokens: 'Токены доступа', docs: 'Документация', domains: 'Домены' },
         navGroupOpen: 'Открытый API',
         navTokens: 'Токены доступа', navActivity: 'Экосистема', navClaims: 'Заявки на владение',
         tkName: 'Название токена', tkSkip2fa: 'Токен без 2FA', tkSkip2faHint: 'При создании нужен один код; далее CLI/CI не требуют totp_code', badgeNo2fa: 'без 2FA', tkCreate: 'Создать токен', tkOnce: 'Показывается один раз — сохраните', tkNone: 'Токенов нет', tkLast: 'Последнее использование', tkCreated: 'Создан', tkRevoke: 'Отозвать', tkRevokeOk: 'Отозван', tkUsage: 'Открытый API / CLI (epsdk push) / внешние инструменты: заголовок Authorization: Bearer epat_… равен вашей сессии', tkCopied: 'Скопировано',
@@ -288,6 +384,30 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
         errName: 'Только латиница, цифры, _ и -', errPackage: 'Имена PyPI: латиница, цифры, . _ -', errDesc: 'Описание — минимум 10 символов', errRepo: 'Репозиторий только на github.com / codeberg.org',
         submitting: 'Отправка…', saving: 'Сохранение…', unsaved: 'Есть несохранённые изменения. Уйти?', filled: 'Заполнено автоматически', curLogo: 'Текущий логотип:',
         confirm: 'ОК', docsLoading: 'Загрузка документации…', docsMissing: 'Документ не найден', docsDesc: 'По разделам: интеграция, токены, модули, заявки, вопросы.',
+        dm: {
+            desc: 'Бесплатный домен для опубликованного модуля: <метка>.plugin.erisdev.com',
+            apply: 'Новый домен', mode: 'Способ подключения',
+            modeGit: 'Ветка репозитория (рекомендуется)', hintGit: 'Содержимое ветки git-репозитория публикуется как сайт — GitHub, Codeberg, свои Gitea/Forgejo и GitLab',
+            modeRedirect: 'Перенаправление', hintRedirect: '301-редирект на указанный https-адрес',
+            modeDns: 'Свой сервер (расширенный)', hintDns: 'Направить домен на свой сервер (CNAME / A / AAAA)',
+            module: 'Выберите модуль', mineOnly: 'Только ваши зарегистрированные модули',
+            label: 'Метка домена', labelAvail: (f) => `${f}.plugin.erisdev.com доступен`,
+            platform: 'Платформа репозитория', hintSelfHost: 'Собственные инстансы должны быть доступны по HTTPS из интернета; GitHub/Codeberg распознаются автоматически',
+            submit: 'Отправить заявку', list: 'Мои домены', empty: 'Доменов пока нет',
+            stVerifying: 'Ожидает проверки', stActive: 'Активен', stPaused: 'Приостановлен', stDisabled: 'Отключён',
+            verify: 'Проверить', pause: 'Пауза', resume: 'Возобновить',
+            verifyTitle: 'Подтвердите владение',
+            verifyGit: 'Разместите файл erisdev-site-verify.txt в корне ветки со следующим содержимым:',
+            verifyDns: 'Ваш сервер должен отдавать это содержимое по следующему URL (запросы приходят с Host этого домена):',
+            verifyBtn: 'Размещено — проверить',
+            verifyOk: 'Проверка пройдена, домен активен', verifyFail: 'Проверочное содержимое не найдено, проверьте размещение и содержимое',
+            applied: 'Заявка отправлена', okActive: (f) => `Домен активен: https://${f}`,
+            errLabel: 'Только строчные буквы, цифры и внутренние дефисы (2-63)', errRepo: 'Репозиторий: полный https URL выбранной платформы',
+            errBranch: 'Неверное имя ветки', errTarget: 'Требуется https:// URL', errDnsValue: 'Неверное значение записи',
+            hintDnsServe: 'Сервер должен отвечать на запросы с Host этого домена; DNS-запись создаётся и проксируется платформой',
+            limits: (m, u) => `До ${m} на модуль и ${u} на аккаунт`,
+            owner: 'Владелец', allDomains: 'Все домены (админ)',
+        },
     },
     };
     return D;
@@ -738,6 +858,7 @@ function renderShell(app) {
         ['navGroupApp', [
             ['modules', 'nav.modules', I.modules, true],
             ['submit', 'nav.submit', I.plus, true],
+            ['domains', 'nav.domains', I.globe, true],
             ['claims', 'nav.claims', I.check, () => staff()],
         ]],
         ['navGroupOpen', [
@@ -804,7 +925,7 @@ function renderShell(app) {
 
 function loadView() {
     const v = $('#view');
-    ({ dash: viewDash, modules: viewModules, submit: viewSubmit, users: viewUsers, clients: viewClients, audit: viewAudit, profile: viewProfile, tokens: viewTokens, activity: viewActivity, claims: viewClaims, docs: viewDocs }[S.view] || viewDash)(v);
+    ({ dash: viewDash, modules: viewModules, submit: viewSubmit, users: viewUsers, clients: viewClients, audit: viewAudit, profile: viewProfile, tokens: viewTokens, activity: viewActivity, claims: viewClaims, docs: viewDocs, domains: viewDomains }[S.view] || viewDash)(v);
 }
 
 // ═══ 总览 ═══
@@ -822,6 +943,7 @@ async function viewDash(v) {
     const entries = [
         ['modules', 'nav.modules', I.modules, `${ms.length} ${esc(t('stat.total'))}`],
         ['submit', 'nav.submit', I.plus, ''],
+        ['domains', 'nav.domains', I.globe, ''],
         ['activity', 'nav.activity', I.audit, ''],
         ['tokens', 'nav.tokens', I.key, ''],
         ...staff() ? [
@@ -975,6 +1097,220 @@ function renderModRows(v) {
     });
 }
 
+// ═══ 托管域名（<label>.plugin.erisdev.com：git 分支 / 重定向 / 自有服务器）═══
+async function viewDomains(v) {
+    const dm = k => t('dm.' + k);
+    v.innerHTML = `<div class="page-title">${esc(t('nav.domains'))}</div><div class="page-desc">${esc(dm('desc'))}</div>
+        <div class="card" style="max-width:860px">
+            <h3>${esc(dm('apply'))}</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="field"><label>${esc(dm('module'))} *</label><select id="dm-module"></select><div class="hint">${esc(dm('mineOnly'))}</div></div>
+                <div class="field"><label>${esc(dm('mode'))}</label><select id="dm-mode">
+                    <option value="git">${esc(dm('modeGit'))}</option>
+                    <option value="redirect">${esc(dm('modeRedirect'))}</option>
+                    <option value="dns">${esc(dm('modeDns'))}</option>
+                </select><div class="hint" id="dm-mode-hint"></div></div>
+            </div>
+            <div class="field"><label>${esc(dm('label'))} *</label>
+                <div style="display:flex;gap:10px;align-items:baseline">
+                    <input id="dm-label" placeholder="mybot" style="max-width:240px" autocomplete="off" spellcheck="false">
+                    <span class="muted" style="font-size:12px">.plugin.erisdev.com</span>
+                </div>
+                <div class="hint" id="dm-label-hint"></div>
+            </div>
+            <div id="dm-git-fields">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="field"><label>${esc(dm('platform'))} *</label><select id="dm-platform">
+                        <option value="github">GitHub</option>
+                        <option value="codeberg">Codeberg</option>
+                        <option value="gitea">Gitea / Forgejo</option>
+                        <option value="gitlab">GitLab</option>
+                    </select><div class="hint" id="dm-platform-hint"></div></div>
+                    <div class="field"><label>${esc(dm('branch'))} *</label><input id="dm-branch" placeholder="main" autocomplete="off" spellcheck="false"></div>
+                </div>
+                <div class="field"><label>${esc(dm('repo'))} *</label><input id="dm-repo" placeholder="https://github.com/owner/repo" autocomplete="off" spellcheck="false"></div>
+            </div>
+            <div id="dm-redirect-fields" hidden>
+                <div class="field"><label>${esc(dm('target'))} *</label><input id="dm-target" placeholder="https://example.com/docs" autocomplete="off" spellcheck="false"></div>
+            </div>
+            <div id="dm-dns-fields" hidden>
+                <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px">
+                    <div class="field"><label>${esc(dm('dnsType'))} *</label><select id="dm-dns-type"><option>CNAME</option><option>A</option><option>AAAA</option></select></div>
+                    <div class="field"><label>${esc(dm('dnsValue'))} *</label><input id="dm-dns-value" placeholder="origin.example.com / 203.0.113.10" autocomplete="off" spellcheck="false"></div>
+                </div>
+                <div class="hint">${esc(dm('hintDnsServe'))}</div>
+            </div>
+            <div style="display:flex;justify-content:flex-end">
+                <button class="btn" id="dm-submit" style="min-width:140px">${esc(dm('submit'))}</button>
+            </div>
+        </div>
+        <div class="card" style="max-width:860px">
+            <h3 style="display:flex;justify-content:space-between;align-items:center">${esc(dm('list'))}
+                <span style="display:flex;gap:10px;align-items:center;font-weight:400">
+                    <span class="muted" id="dm-limits" style="font-size:12px"></span>
+                    ${staff() ? `<button class="btn ghost sm" id="dm-all">${esc(dm('allDomains'))}</button>` : ''}
+                </span>
+            </h3>
+            <div id="dm-list"></div>
+        </div>`;
+
+    // ── 数据加载：我的域名 + 我的模块（表单下拉用）──
+    const [domData, modData] = await Promise.all([
+        api('/api/domains' + (staff() && S.domAll ? '?all=1' : '')).catch(() => ({})),
+        api('/api/modules').catch(() => ({})),
+    ]);
+    const domains = domData.domains || [];
+    if (domData.limits) $('#dm-limits').textContent = dm('limits')(domData.limits.per_module, domData.limits.per_user);
+    const myMods = (modData.modules || []).filter(x => x.mine);
+    const sel = $('#dm-module');
+    sel.innerHTML = myMods.length
+        ? myMods.map(m => `<option value="${esc(m.type + ':' + esc(m.name))}">${esc(m.name)} (${m.type})</option>`).join('')
+        : `<option value="">—</option>`;
+
+    // ── 模块详情「申请域名」入口的预填 ──
+    if (S.domApply) {
+        const pre = S.domApply;
+        S.domApply = null;
+        const opt = [...sel.options].find(o => o.value === pre.type + ':' + pre.name);
+        if (opt) sel.value = opt.value;
+        if (pre.repo) $('#dm-repo').value = pre.repo;
+    }
+
+    // ── 模式切换：字段显隐 + 提示 ──
+    const syncMode = () => {
+        const mode = $('#dm-mode').value;
+        $('#dm-git-fields').hidden = mode !== 'git';
+        $('#dm-redirect-fields').hidden = mode !== 'redirect';
+        $('#dm-dns-fields').hidden = mode !== 'dns';
+        $('#dm-mode-hint').textContent = mode === 'git' ? dm('hintGit') : mode === 'redirect' ? dm('hintRedirect') : dm('hintDns');
+    };
+    $('#dm-mode').onchange = syncMode;
+    syncMode();
+
+    // ── 仓库平台：占位符与自建实例提示联动 ──
+    const REPO_PH = { github: 'https://github.com/owner/repo', codeberg: 'https://codeberg.org/owner/repo', gitea: 'https://git.example.com/owner/repo', gitlab: 'https://gitlab.example.com/owner/repo' };
+    const syncPlatform = () => {
+        const p = $('#dm-platform').value;
+        $('#dm-repo').placeholder = REPO_PH[p];
+        $('#dm-platform-hint').textContent = (p === 'gitea' || p === 'gitlab') ? dm('hintSelfHost') : '';
+    };
+    $('#dm-platform').onchange = syncPlatform;
+    syncPlatform();
+
+    // ── 前缀即时可用性（防抖查询服务端）──
+    let checkTimer = null;
+    const setHint = (text, ok) => { const h = $('#dm-label-hint'); h.textContent = text; h.style.color = ok ? '#3a94d0' : '#d9534f'; };
+    $('#dm-label').addEventListener('input', () => {
+        clearTimeout(checkTimer);
+        const val = $('#dm-label').value.trim().toLowerCase();
+        if (!val) return setHint('', true);
+        if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(val)) return setHint(dm('errLabel'), false);
+        checkTimer = setTimeout(async () => {
+            const d = await api('/api/domains/check?label=' + encodeURIComponent(val)).catch(() => ({}));
+            if (d.available) setHint(dm('labelAvail')(val), true);
+            else setHint(d.reason || dm('errLabel'), false);
+        }, 350);
+    });
+
+    // ── 提交 ──
+    $('#dm-submit').onclick = () => busy($('#dm-submit'), async () => {
+        const [type, name] = sel.value.split(':');
+        if (!name) return toast(dm('mineOnly'), 1);
+        const mode = $('#dm-mode').value;
+        const label = $('#dm-label').value.trim().toLowerCase();
+        if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(label)) return toast(dm('errLabel'), 1);
+        const body = { module_name: name, module_type: type, mode, label };
+        if (mode === 'git') {
+            const repo = $('#dm-repo').value.trim();
+            const branch = $('#dm-branch').value.trim();
+            if (!/^https:\/\/[\w.-]+(:\d{1,5})?(\/[\w.-]+){2}\/?$/.test(repo)) return toast(dm('errRepo'), 1);
+            if (!branch || /[^\w.\-/]/.test(branch)) return toast(dm('errBranch'), 1);
+            body.platform = $('#dm-platform').value;
+            body.repo = repo;
+            body.branch = branch;
+        } else if (mode === 'redirect') {
+            const target = $('#dm-target').value.trim();
+            if (!/^https:\/\/[^\s]+$/.test(target)) return toast(dm('errTarget'), 1);
+            body.target_url = target;
+        } else {
+            body.dns_type = $('#dm-dns-type').value;
+            const val = $('#dm-dns-value').value.trim();
+            if (!val) return toast(dm('errDnsValue'), 1);
+            body.dns_value = val;
+        }
+        const d = await withTotp(code => {
+            const payload = code ? { ...body, totp_code: code } : body;
+            return api('/api/domains', { method: 'POST', body: JSON.stringify(payload) });
+        });
+        if (d.cancelled) return;
+        if (d.error) return toast(d.message || d.error, 1);
+        toast(d.status === 'active' ? dm('okActive')(d.fqdn) : dm('applied'));
+        loadView();
+    });
+
+    // ── 列表渲染（验证面板内嵌在对应域名卡片里）──
+    const statusBadge = st => {
+        const map = { active: ['', 'stActive'], verifying: ['unverified', 'stVerifying'], paused: ['role', 'stPaused'], disabled: ['banned', 'stDisabled'] };
+        const [cls, key] = map[st] || ['', st];
+        return `<span class="badge ${cls}">${esc(dm(key))}</span>`;
+    };
+    const modeLabel = m => m === 'git' ? dm('modeGit') : m === 'redirect' ? dm('modeRedirect') : dm('modeDns');
+    const listEl = $('#dm-list');
+    const allBtn = $('#dm-all');
+    if (allBtn) allBtn.onclick = () => { S.domAll = !S.domAll; loadView(); };
+    if (!domains.length) {
+        listEl.innerHTML = `<div class="empty">${I.inbox}<span>${esc(dm('empty'))}</span></div>`;
+        return;
+    }
+    listEl.innerHTML = domains.map(row => {
+        const verifying = row.status === 'verifying' && row.mode !== 'redirect';
+        return `<div class="dm-item" style="border:1px solid var(--line,#e5e8ec);border-radius:12px;padding:14px 16px;margin-bottom:10px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <a href="https://${esc(row.fqdn)}" target="_blank" rel="noopener" class="mono" style="font-weight:600;font-size:14px;color:inherit">${esc(row.fqdn)}</a>
+                ${statusBadge(row.status)}
+                <span class="muted" style="font-size:12px">${esc(modeLabel(row.mode))} · ${esc(row.module_name)} (${row.module_type})${staff() && domData.all && row.owner_username ? ' · @' + esc(row.owner_username) : ''}</span>
+                <span style="flex:1"></span>
+                ${row.status === 'active' || row.status === 'paused' ? `<button class="btn ghost sm" data-dm-act="pause" data-fqdn="${esc(row.label)}">${esc(row.status === 'active' ? dm('pause') : dm('resume'))}</button>` : ''}
+                ${row.status !== 'disabled' ? `<button class="btn ghost sm danger" data-dm-act="delete" data-fqdn="${esc(row.label)}">${esc(t('del'))}</button>` : ''}
+            </div>
+            ${verifying ? `<div style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line,#e5e8ec)">
+                <b style="font-size:13px">${esc(dm('verifyTitle'))}</b>
+                <div class="muted" style="font-size:12px;margin:6px 0">${esc(row.mode === 'git' ? dm('verifyGit') : dm('verifyDns'))}</div>
+                ${row.mode === 'dns' ? `<div class="mono muted" style="font-size:12px;margin-bottom:6px">https://${esc(row.fqdn)}/.well-known/erisdev-verify.txt</div>` : ''}
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <code class="mono" style="background:rgba(58,148,208,.1);padding:4px 10px;border-radius:8px;user-select:all">${esc(row.verify_code)}</code>
+                    <button class="btn ghost sm" data-dm-copy="${esc(row.verify_code)}">${esc(t('copy'))}</button>
+                    <button class="btn sm" data-dm-act="verify" data-fqdn="${esc(row.label)}">${esc(dm('verifyBtn'))}</button>
+                </div>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+
+    const reload = () => loadView();
+    listEl.querySelectorAll('[data-dm-copy]').forEach(b => b.onclick = () => {
+        navigator.clipboard.writeText(b.dataset.dmCopy).then(() => toast(t('tkCopied'))).catch(() => {});
+    });
+    listEl.querySelectorAll('[data-dm-act="verify"]').forEach(b => b.onclick = () => busy(b, async () => {
+        const d = await api('/api/domains/' + b.dataset.fqdn + '/verify', { method: 'POST', body: '{}' });
+        if (d.error) return toast(d.error === 'VERIFY_FAILED' ? dm('verifyFail') : (d.message || d.error), 1);
+        toast(dm('verifyOk'));
+        reload();
+    }));
+    listEl.querySelectorAll('[data-dm-act="pause"]').forEach(b => b.onclick = async () => {
+        const row = domains.find(r => r.label === b.dataset.fqdn);
+        const action = row && row.status === 'active' ? 'pause' : 'resume';
+        const d = await withTotp(code => api('/api/domains/' + b.dataset.fqdn + '/manage', { method: 'POST', body: JSON.stringify({ action, totp_code: code || undefined }) }));
+        if (d.cancelled) return;
+        d.error ? toast(d.message || d.error, 1) : reload();
+    });
+    listEl.querySelectorAll('[data-dm-act="delete"]').forEach(b => b.onclick = async () => {
+        if (!(await uiConfirm(t('confirmDelete')))) return;
+        const d = await withTotp(code => api('/api/domains/' + b.dataset.fqdn + '/manage', { method: 'POST', body: JSON.stringify({ action: 'delete', totp_code: code || undefined }) }));
+        if (d.cancelled) return;
+        d.error ? toast(d.message || d.error, 1) : reload();
+    });
+}
+
 // ═══ 模块详情（应用详情形态：头部 + 分区表单，所有者可改全部字段）═══
 function viewModuleDetail(v) {
     const m = S.modDetail;
@@ -997,6 +1333,7 @@ function viewModuleDetail(v) {
             </div>
             <div style="display:flex;gap:8px">
                 ${m.repository ? `<a class="btn ghost sm" href="${esc(m.repository)}" target="_blank" rel="noopener">${I.ext.replace('<svg', '<svg style="width:13px;height:13px"')} GitHub</a>` : ''}
+                ${canManage ? `<button class="btn sm ghost" id="md-domain">${I.globe.replace('<svg', '<svg style="width:13px;height:13px"')} ${esc(t('nav.domains'))}</button>` : ''}
                 ${staff() ? `<button class="btn sm ${m.verified ? 'ghost' : 'ok'}" id="md-verify">${m.verified ? esc(t('revoke')) : esc(t('verify'))}</button>` : ''}
                 ${canManage ? `<button class="btn sm danger" id="md-del">${I.trash.replace('<svg', '<svg style="width:13px;height:13px"')} ${esc(t('del'))}</button>` : ''}
                 ${!canManage ? `<button class="btn sm ghost" id="md-claim">${esc(t('clClaim'))}</button>` : ''}
@@ -1047,6 +1384,14 @@ function viewModuleDetail(v) {
         </div>` : `<div class="card"><div class="empty" style="padding:20px">${esc((m.description || '').split('|')[0])}</div></div>`}`;
 
     $('#mod-back').onclick = async () => { if (!(await confirmLeave())) return; S.modDetail = null; loadView(); };
+    const domBtn = $('#md-domain');
+    if (domBtn) domBtn.onclick = async () => {
+        if (!(await confirmLeave())) return;
+        S.domApply = { name: m.name, type: m.type, repo: m.repository || '' };
+        S.modDetail = null;
+        S.view = 'domains';
+        render();
+    };
     const verifyBtn = $('#md-verify');
     if (verifyBtn) verifyBtn.onclick = async () => {
         const d = await withTotp(code => api('/api/modules/manage', { method: 'POST', body: JSON.stringify({ action: 'verify', name: m.name, type: m.type, verified: !m.verified, totp_code: code || undefined }) }));

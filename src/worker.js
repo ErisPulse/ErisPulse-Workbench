@@ -2,6 +2,8 @@
 // 架构：Cloudflare Worker（本文件）+ D1 + 静态前端（public/）
 // 完全开源，接受社区监督。
 
+import { isDomainHost, handleDomainRequest } from './domains.js';
+
 // ── OAuth 上游（作为客户端登录）──
 const OAUTH_UPSTREAM = {
     github: {
@@ -32,6 +34,17 @@ const CODE_TTL_MS = 10 * 60 * 1000;
 const OAUTH_TOKEN_TTL_S = 30 * 86400;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 const AVATAR_MAX = 1024 * 1024;
+
+// ── 模块托管域名（<label>.plugin.erisdev.com）──
+const DOMAIN_BASE = 'plugin.erisdev.com';
+const DOMAIN_LABEL_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
+const DOMAIN_BRANCH_RE = /^[A-Za-z0-9._\-/]{1,120}$/;
+const DOMAIN_LIMIT_PER_MODULE = 2;
+const DOMAIN_LIMIT_PER_USER = 10;
+// 二级保留名：官方子域与基础设施相关词，永不开放
+const DOMAIN_RESERVED = new Set(['www', 'api', 'admin', 'mail', 'smtp', 'imap', 'pop', 'ns1', 'ns2',
+    'blog', 'docs', 'cdn', 'static', 'assets', 'oauth', 'app', 'dev', 'test', 'demo', 'help',
+    'status', 'forum', 'wiki', 'shop', 'store', 'pay', 'vpn', 'git', 'ftp', 'mx', 'erispulse', 'workbench']);
 
 // ── 工具 ──
 function json(data, status = 200, extra = {}) {
@@ -301,6 +314,110 @@ async function ownerUidOf(db, type, name) {
     } catch (e) { return null; }
 }
 
+// ═══════════ 模块托管域名（<label>.plugin.erisdev.com）═══════════
+const domainFqdn = label => label + '.' + DOMAIN_BASE;
+
+/** 仓库输入归一化：按平台解析 → {host, base, owner, repo}；github/codeberg 的 URL 自动纠正平台，其余按 gitea/gitlab 风格接受任意 https 实例 */
+function parseGitRepo(input, platform) {
+    const url = String(input || '').trim().replace(/\.git$/i, '').replace(/\/+$/, '');
+    const gh = url.match(/^https:\/\/(?:www\.)?github\.com\/(.+)$/i);
+    if (gh) return ownerRepoOf('github', '', gh[1]);
+    const cb = url.match(/^https:\/\/(?:www\.)?codeberg\.org\/(.+)$/i);
+    if (cb) return ownerRepoOf('codeberg', '', cb[1]);
+    if (platform === 'github' || platform === 'codeberg') return null; // 平台明确但 URL 不符
+    const m = url.match(/^https:\/\/([a-z0-9]([a-z0-9.-]*[a-z0-9])?(:\d{1,5})?)\/(.+)$/i);
+    if (!m) return null;
+    if (m[1].toLowerCase().endsWith('.erisdev.com')) return null; // 指向自身域会造成解析回环
+    return ownerRepoOf(platform === 'gitlab' ? 'gitlab' : 'gitea', 'https://' + m[1].toLowerCase(), m[4]);
+}
+function ownerRepoOf(host, base, rest) {
+    const [owner, repo] = String(rest).split('/');
+    if (!/^[\w.-]{1,100}$/.test(owner || '') || !/^[\w.-]{1,100}$/.test(repo || '')) return null;
+    return { host, base, owner, repo };
+}
+
+/** 仓库与模块登记 repository 同源即视为已证明控制权（模块提交时已绑定） */
+function repoMatchesModule(gitHost, owner, repo, moduleRepository) {
+    const m = String(moduleRepository || '').match(/^https:\/\/(github\.com|codeberg\.org)\/([\w.-]+)\/([\w.-]+?)(\.git)?(\/.*)?$/i);
+    if (!m) return false;
+    return m[1].split('.')[0].toLowerCase() === gitHost
+        && m[2].toLowerCase() === owner.toLowerCase()
+        && m[3].toLowerCase() === repo.toLowerCase();
+}
+
+/** 平台 → raw 文件 URL：github 走 CDN 域；gitea 风格（codeberg / 自建 Gitea·Forgejo）；gitlab 风格（自建 GitLab） */
+function gitRawUrl(host, base, owner, repo, branch, path, bust) {
+    const q = bust ? '?t=' + Date.now() : '';
+    if (host === 'github') return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${q}`;
+    if (host === 'gitlab') return `${base}/${owner}/${repo}/-/raw/${branch}/${path}${q}`;
+    return `${base || 'https://codeberg.org'}/${owner}/${repo}/raw/branch/${branch}/${path}${q}`;
+}
+
+/** label 校验：非法 / 保留 / 已占用分别返回提示文案（API 层英文），通过返回 '' */
+async function checkDomainLabel(db, label) {
+    if (!DOMAIN_LABEL_RE.test(label)) return 'label must be 2-63 lowercase letters, digits or inner hyphens';
+    if (label.length < 2) return 'label must be at least 2 characters';
+    if (DOMAIN_RESERVED.has(label)) return 'this label is reserved';
+    if (await db.prepare('SELECT 1 FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(label)).first()) return 'this label is already taken';
+    return '';
+}
+
+const IPV4_RE = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+const HOSTNAME_RE = /^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+
+/** DNS 记录值校验：拒绝指向自身域与保留/私有地址，通过返回 ''（API 层英文） */
+function checkDnsValue(type, value) {
+    const v = String(value || '').trim().toLowerCase();
+    if (type === 'CNAME') {
+        if (!HOSTNAME_RE.test(v)) return 'CNAME target must be a valid hostname';
+        if (v === DOMAIN_BASE || v.endsWith('.erisdev.com')) return 'CNAME target must not point to erisdev.com itself';
+        return '';
+    }
+    if (type === 'AAAA') {
+        if (!/^[0-9a-f:]{2,45}$/.test(v) || !v.includes(':')) return 'AAAA must be a valid IPv6 address';
+        const h = v.split(':')[0];
+        if (v === '::' || v === '::1' || /^[fF][cCdD]/.test(h) || /^fe[89ab]/.test(h) || /^ff/.test(h) || h === '100') return 'this IPv6 address is a reserved/private range';
+        return '';
+    }
+    if (type === 'A') {
+        const m = v.match(IPV4_RE);
+        if (!m || m.slice(1).some(x => +x > 255)) return 'A must be a valid IPv4 address';
+        const [a, b, c] = [+m[1], +m[2], +m[3]];
+        const bad = a === 0 || a === 10 || a === 127 || a === 169 && b === 254 || a === 172 && b >= 16 && b <= 31
+            || a === 100 && b >= 64 && b <= 127 || a === 192 && (b === 168 || b === 0 && (c === 0 || c === 2))
+            || a === 198 && b === 51 && c === 100 || a === 203 && b === 0 && c === 113 || a >= 224;
+        if (bad) return 'this IPv4 address is a reserved/private range';
+        return '';
+    }
+    return 'record type must be CNAME, A or AAAA';
+}
+
+/** Cloudflare DNS API（zone 级 token：Zone.DNS Edit）；失败抛错，调用方转 502 */
+async function cfDnsApi(env, method, body, recordId) {
+    const url = `https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/dns_records${recordId ? '/' + recordId : ''}`;
+    const resp = await fetch(url, {
+        method,
+        headers: { Authorization: 'Bearer ' + env.CF_DNS_TOKEN, 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+    });
+    const d = await resp.json().catch(() => ({}));
+    if (!resp.ok || !d.success) {
+        const msg = d.errors && d.errors[0] ? `${d.errors[0].code} ${d.errors[0].message}` : 'HTTP ' + resp.status;
+        throw new Error('Cloudflare API: ' + msg);
+    }
+    return d.result;
+}
+
+/** 域名状态变更邮件（中英双语；静默失败，不影响主流程） */
+async function notifyDomainEvent(env, db, uid, subject, textZh, textEn) {
+    try {
+        const u = await db.prepare('SELECT email, display_name FROM users WHERE uid = ?1').bind(uid).first();
+        if (!u || !u.email) return;
+        const body = `${u.display_name || '开发者'}，你好：\n\n${textZh}\n\n—— ErisPulse Workbench（workbench.erisdev.com）\n\nEnglish: ${textEn}`;
+        await smtpSend(env, u.email, subject, body);
+    } catch (e) { /* 通知失败不影响主流程 */ }
+}
+
 // ── 上游 OAuth 登录 ──
 async function upstreamIdentity(env, provider, codeOrToken, isToken) {
     const cfg = OAUTH_UPSTREAM[provider];
@@ -402,6 +519,19 @@ async function ensureTables(db) {
     await db.prepare('ALTER TABLE module_ops ADD COLUMN owner_uid TEXT').run().catch(() => {});
     await db.prepare('ALTER TABLE module_ops ADD COLUMN target_uid TEXT').run().catch(() => {});
     await db.prepare('CREATE TABLE IF NOT EXISTS repo_cache (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)').run().catch(() => {});
+    await db.prepare(`CREATE TABLE IF NOT EXISTS module_domains (
+        fqdn TEXT PRIMARY KEY, label TEXT NOT NULL, uid TEXT NOT NULL,
+        module_name TEXT NOT NULL, module_type TEXT NOT NULL,
+        mode TEXT NOT NULL,
+        git_repo TEXT NOT NULL DEFAULT '', git_host TEXT NOT NULL DEFAULT '', git_branch TEXT NOT NULL DEFAULT '',
+        target_url TEXT NOT NULL DEFAULT '',
+        dns_type TEXT NOT NULL DEFAULT '', dns_value TEXT NOT NULL DEFAULT '', dns_record_id TEXT NOT NULL DEFAULT '',
+        verify_code TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL DEFAULT 1,
+        status TEXT NOT NULL DEFAULT 'verifying',
+        created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    )`).run().catch(() => {});
+    await db.prepare('CREATE INDEX IF NOT EXISTS idx_domains_uid ON module_domains(uid)').run().catch(() => {});
+    await db.prepare('ALTER TABLE module_domains ADD COLUMN git_base TEXT').run().catch(() => {});
 }
 
 // raw.githubusercontent 的 CDN 会缓存旧内容：查询串变化即视为不同资源，用于拿到刚提交后的快照
@@ -476,10 +606,10 @@ async function getCachedPackages(db) {
     }
     // 缓存缺失或已损坏（历史 GBK 数据）：回源，坏快照绝不继续下发
     const resp = await fetch('https://raw.githubusercontent.com/ErisPulse/ErisPulse-ModuleRepo/2x/packages.json', { cf: { cacheTtl: 30 } });
-    if (!resp.ok) return { packages: null, fromCache: false, reason: 'packages.json 获取失败（HTTP ' + resp.status + '）' };
+    if (!resp.ok) return { packages: null, fromCache: false, reason: 'failed to fetch packages.json (HTTP ' + resp.status + ')' };
     let packages;
     try { packages = await readPackages(resp); }
-    catch (e) { return { packages: null, fromCache: false, reason: 'packages.json 不是合法 UTF-8 或含乱码，已拒绝缓存' }; }
+    catch (e) { return { packages: null, fromCache: false, reason: 'packages.json is not valid UTF-8 (mojibake detected); refusing to cache' }; }
     await db.prepare("INSERT INTO repo_cache (key, value, updated_at) VALUES ('packages', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2")
         .bind(JSON.stringify(packages), now()).run().catch(() => {});
     return { packages: packages, fromCache: false };
@@ -630,6 +760,11 @@ export default {
         const method = request.method;
         const db = env.DB;
 
+        // ── 模块托管域名站点服务（*.plugin.erisdev.com，逻辑在 domains.js）──
+        if (isDomainHost(url.hostname.toLowerCase())) {
+            return handleDomainRequest(request, env, ctx);
+        }
+
         // 静态资源（ASSETS binding）
         if (!path.startsWith('/api/') && path !== '/oauth') {
             return env.ASSETS.fetch(request);
@@ -665,6 +800,10 @@ export default {
                         ['POST', '/api/modules/manage'], ['POST', '/api/modules/batch'],
                         ['GET', '/api/modules/ops', '?name=&type= 或缺省查自己'],
                         ['POST', '/api/modules/claim'], ['GET', '/api/modules/claims'],
+                        ['GET', '/api/domains', 'my hosted domains; staff can pass ?all=1'],
+                        ['GET', '/api/domains/check', 'label availability via ?label='],
+                        ['POST', '/api/domains', 'request a hosted domain {module_name, module_type, mode: git|redirect|dns, ...}'],
+                        ['POST', '/api/domains/:label/verify'], ['POST', '/api/domains/:label/manage', 'action: pause/resume/delete/update'],
                         ['GET', '/api/ecosystem'], ['GET', '/api/release'],
                         ['GET', '/api/tokens'], ['POST', '/api/tokens', '{name, skip_2fa, totp_code?}'],
                         ['POST', '/api/tokens/:id/revoke'],
@@ -1164,6 +1303,22 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     return json({ ok: true });
                 }
 
+                // 托管域名处置：disable 立即下线；enable 恢复为 paused（所有者自行恢复）
+                let dma = path.match(/^\/api\/admin\/domains\/([a-z0-9-]{1,63})\/(disable|enable)$/);
+                if (dma && method === 'POST') {
+                    const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(dma[1])).first();
+                    if (!row) return fail('NOT_FOUND', 404, 'domain not found');
+                    const newStatus = dma[2] === 'disable' ? 'disabled' : 'paused';
+                    await db.prepare('UPDATE module_domains SET status = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newStatus, now(), row.fqdn).run();
+                    await audit(db, me.uid, 'domain.' + dma[2], row.fqdn, row.uid);
+                    if (dma[2] === 'disable') {
+                        notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名已被停用 / Domain disabled: ' + row.fqdn,
+                            '你的模块「' + row.module_name + '」托管域名已被管理员停用。如认为存在误会，请联系管理员。',
+                            'The hosted domain for your module "' + row.module_name + '" has been disabled by an admin. Contact the team if you believe this is a mistake.');
+                    }
+                    return json({ ok: true, status: newStatus });
+                }
+
                 if (path === '/api/admin/audit' && method === 'GET') {
                     const rows = await db.prepare('SELECT * FROM audit_log ORDER BY id DESC LIMIT 100').all();
                     return json({ log: rows.results });
@@ -1202,6 +1357,210 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         .bind(me.uid).all();
                 }
                 return json({ ops: rows.results });
+            }
+
+            // ═══ 模块托管域名（<label>.plugin.erisdev.com）═══
+            // git/redirect 模式只写 D1 即生效，dns 模式另经 Cloudflare API 建 proxied 记录
+
+            // 可用性即时查询（前端输入框防抖调用）
+            if (path === '/api/domains/check' && method === 'GET') {
+                const label = String(url.searchParams.get('label') || '').trim().toLowerCase();
+                if (!label) return json({ label, available: false, reason: '' });
+                const err = await checkDomainLabel(db, label);
+                return json({ label, fqdn: domainFqdn(label), available: !err, reason: err });
+            }
+
+            // 我的域名列表；staff 可 ?all=1 查全部（滥用处置前先看全局）
+            if (path === '/api/domains' && method === 'GET') {
+                await ensureTables(db);
+                if (url.searchParams.get('all') === '1' && isStaff(me)) {
+                    const rows = await db.prepare('SELECT d.*, u.username AS owner_username FROM module_domains d LEFT JOIN users u ON u.uid = d.uid ORDER BY d.created_at DESC LIMIT 200').all();
+                    return json({ domains: rows.results, all: true });
+                }
+                const rows = await db.prepare('SELECT * FROM module_domains WHERE uid = ?1 ORDER BY created_at DESC LIMIT 50').bind(me.uid).all();
+                return json({ domains: rows.results, limits: { per_module: DOMAIN_LIMIT_PER_MODULE, per_user: DOMAIN_LIMIT_PER_USER } });
+            }
+
+            // 申请：登录 + TOTP + 模块所有权 + 限额（每模块 2 个 / 每用户 10 个）
+            if (path === '/api/domains' && method === 'POST') {
+                const b = await request.json().catch(() => ({}));
+                const totpErr = await requireTotp(db, me, b);
+                if (totpErr) return totpErr;
+                if (!env.CF_DNS_TOKEN || !env.CF_ZONE_ID) return fail('UNCONFIGURED', 503, 'hosted domains not configured (CF_DNS_TOKEN / CF_ZONE_ID missing)');
+                const mode = String(b.mode || 'git');
+                if (!['git', 'redirect', 'dns'].includes(mode)) return fail('VALIDATION', 400, 'mode must be git, redirect or dns');
+                if (!b.module_name || !['module', 'adapter'].includes(b.module_type)) return fail('VALIDATION', 400, 'missing module_name or module_type');
+                const label = String(b.label || '').trim().toLowerCase();
+                const labelErr = await checkDomainLabel(db, label);
+                if (labelErr) return fail('VALIDATION', 400, labelErr);
+
+                // 模块存在 + 所有权（与模块管理同一所有权模型）
+                const cached = await getCachedPackages(db);
+                if (!cached.packages) return fail('UPSTREAM', 502, cached.reason || 'failed to fetch packages.json');
+                const info = containerOf(cached.packages, b.module_type)[b.module_name];
+                if (!info) return fail('NOT_FOUND', 404, 'module not found');
+                if (!isStaff(me)) {
+                    const uids = await myUids();
+                    if (!uids.has(info.submitted_by_uid || '')) return fail('FORBIDDEN', 403, 'only the module owner can request a hosted domain');
+                }
+                const modCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE module_name = ?1 AND module_type = ?2').bind(b.module_name, b.module_type).first()).n;
+                if (modCnt >= DOMAIN_LIMIT_PER_MODULE) return fail('LIMIT', 429, 'module domain limit reached (' + DOMAIN_LIMIT_PER_MODULE + ')');
+                const userCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE uid = ?1').bind(me.uid).first()).n;
+                if (userCnt >= DOMAIN_LIMIT_PER_USER) return fail('LIMIT', 429, 'account domain limit reached (' + DOMAIN_LIMIT_PER_USER + ')');
+
+                const fqdn = domainFqdn(label);
+                const verifyCode = randomHex(8);
+                let status = 'active';
+                let verifyFile = '';
+                const vals = {
+                    git_repo: '', git_host: '', git_branch: '', target_url: '',
+                    dns_type: '', dns_value: '', dns_record_id: '', verify_code: verifyCode,
+                };
+
+                if (mode === 'git') {
+                    const g = parseGitRepo(b.repo, String(b.platform || '').toLowerCase());
+                    if (!g) return fail('VALIDATION', 400, 'repo must be a full https URL of the selected platform');
+                    const branch = String(b.branch || '').trim();
+                    if (!DOMAIN_BRANCH_RE.test(branch) || branch.startsWith('/') || branch.endsWith('/')) return fail('VALIDATION', 400, 'invalid branch name');
+                    vals.git_repo = g.owner + '/' + g.repo;
+                    vals.git_host = g.host;
+                    vals.git_base = g.base;
+                    vals.git_branch = branch;
+                    // 仓库与模块登记 repository 同源 → 模块提交时已证明控制权，免文件验证直接生效
+                    if (!repoMatchesModule(g.host, g.owner, g.repo, info.repository)) {
+                        status = 'verifying';
+                        verifyFile = 'erisdev-site-verify.txt';
+                    }
+                } else if (mode === 'redirect') {
+                    const t = String(b.target_url || '').trim();
+                    if (!/^https:\/\/[^\s]{1,500}$/.test(t)) return fail('VALIDATION', 400, 'target_url must be an https:// URL');
+                    vals.target_url = t;
+                } else {
+                    const dnsType = String(b.dns_type || '').toUpperCase();
+                    const valErr = checkDnsValue(dnsType, b.dns_value);
+                    if (valErr) return fail('VALIDATION', 400, valErr);
+                    vals.dns_type = dnsType;
+                    vals.dns_value = String(b.dns_value).trim().toLowerCase();
+                    status = 'verifying';
+                    verifyFile = '.well-known/erisdev-verify.txt';
+                    // proxied 记录：隐藏源站 IP，防护与证书由 Cloudflare 承担，可即时下线
+                    try {
+                        const rec = await cfDnsApi(env, 'POST', {
+                            type: dnsType, name: fqdn, content: vals.dns_value, proxied: true, ttl: 1,
+                            comment: 'ErisPulse module domain: ' + b.module_name,
+                        });
+                        vals.dns_record_id = rec.id;
+                    } catch (e) {
+                        return fail('UPSTREAM', 502, String(e.message || e).slice(0, 200));
+                    }
+                }
+
+                await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, verify_code, version, status, created_at, updated_at)
+                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,1,?15,?16,?16)`)
+                    .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.verify_code, status, now()).run();
+                await audit(db, me.uid, 'domain.apply', fqdn, mode);
+                if (status === 'active') {
+                    notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
+                        '你的模块「' + b.module_name + '」托管域名已生效，现在可以通过 https://' + fqdn + ' 访问。',
+                        'The hosted domain for your module "' + b.module_name + '" is now live at https://' + fqdn + '.');
+                } else {
+                    notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名待验证 / Domain pending verification: ' + fqdn,
+                        mode === 'git'
+                            ? '请在仓库 ' + vals.git_repo + ' 的 ' + vals.git_branch + ' 分支根目录放置 erisdev-site-verify.txt，内容为：' + verifyCode + '，然后到工作台「托管域名」页点击验证。'
+                            : '请在你服务器上为 ' + fqdn + ' 提供 https://' + fqdn + '/.well-known/erisdev-verify.txt，内容为：' + verifyCode + '，然后到工作台「托管域名」页点击验证。',
+                        mode === 'git'
+                            ? 'Place erisdev-site-verify.txt (content: ' + verifyCode + ') at the root of branch ' + vals.git_branch + ' in ' + vals.git_repo + ', then click Verify on the Hosted Domains page.'
+                            : 'Serve the content "' + verifyCode + '" at https://' + fqdn + '/.well-known/erisdev-verify.txt on your server, then click Verify on the Hosted Domains page.');
+                }
+                return json({ ok: true, fqdn, status, verify_code: status === 'active' ? '' : verifyCode, verify_file: verifyFile });
+            }
+
+            // 重新验证（git 模式查分支根验证文件；dns 模式经本域名回源查 .well-known）
+            let dm = path.match(/^\/api\/domains\/([a-z0-9-]{1,63})\/verify$/);
+            if (dm && method === 'POST') {
+                const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(dm[1])).first();
+                if (!row) return fail('NOT_FOUND', 404, 'domain not found');
+                if (row.uid !== me.uid && !isStaff(me)) return fail('FORBIDDEN', 403, 'only the owner can manage this domain');
+                if (row.status === 'active') return fail('VALIDATION', 400, 'domain is already active');
+                if (row.status === 'disabled') return fail('FORBIDDEN', 403, 'this domain has been disabled by an admin');
+                if (row.mode === 'redirect') return fail('VALIDATION', 400, 'redirect domains do not need verification');
+                let ok = false;
+                try {
+                    const resp = row.mode === 'git'
+                        ? await fetch(gitRawUrl(row.git_host, row.git_base || '', row.git_repo.split('/')[0], row.git_repo.split('/')[1], row.git_branch, 'erisdev-site-verify.txt', true), { cf: { cacheTtl: 0 } })
+                        : await fetch('https://' + row.fqdn + '/.well-known/erisdev-verify.txt?t=' + Date.now(), { cf: { cacheTtl: 0 } });
+                    ok = resp.ok && String(await resp.text()).trim() === row.verify_code;
+                } catch (e) { ok = false; }
+                if (!ok) return fail('VERIFY_FAILED', 400, 'verification file not found or content mismatched; check its location and content');
+                await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                await audit(db, me.uid, 'domain.verify', row.fqdn, '');
+                notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + row.fqdn,
+                    '你的模块「' + row.module_name + '」托管域名验证通过并已生效，现在可以通过 https://' + row.fqdn + ' 访问。',
+                    'The hosted domain for your module "' + row.module_name + '" passed verification and is now live at https://' + row.fqdn + '.');
+                return json({ ok: true, status: 'active' });
+            }
+
+            // 管理：pause / resume / delete / update（update 改目标后回待验证，dns 模式同步 CF 记录）
+            let dmm = path.match(/^\/api\/domains\/([a-z0-9-]{1,63})\/manage$/);
+            if (dmm && method === 'POST') {
+                const b = await request.json().catch(() => ({}));
+                const totpErr = await requireTotp(db, me, b);
+                if (totpErr) return totpErr;
+                const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(dmm[1])).first();
+                if (!row) return fail('NOT_FOUND', 404, 'domain not found');
+                if (row.uid !== me.uid && !isStaff(me)) return fail('FORBIDDEN', 403, 'only the owner can manage this domain');
+                const action = String(b.action || '');
+
+                if (action === 'pause') {
+                    if (row.status !== 'active') return fail('VALIDATION', 400, 'only active domains can be paused');
+                    await db.prepare("UPDATE module_domains SET status = 'paused', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                } else if (action === 'resume') {
+                    if (row.status !== 'paused') return fail('VALIDATION', 400, 'only paused domains can be resumed');
+                    await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                } else if (action === 'delete') {
+                    if (row.dns_record_id && env.CF_DNS_TOKEN) {
+                        try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 记录已不存在时忽略 */ }
+                    }
+                    await db.prepare('DELETE FROM module_domains WHERE fqdn = ?1').bind(row.fqdn).run();
+                } else if (action === 'update') {
+                    if (row.status === 'disabled') return fail('FORBIDDEN', 403, 'this domain has been disabled by an admin');
+                    if (row.mode === 'git') {
+                        const g = parseGitRepo(b.repo, String(b.platform || '').toLowerCase());
+                        if (!g) return fail('VALIDATION', 400, 'repo must be a full https URL of the selected platform');
+                        const branch = String(b.branch || '').trim();
+                        if (!DOMAIN_BRANCH_RE.test(branch) || branch.startsWith('/') || branch.endsWith('/')) return fail('VALIDATION', 400, 'invalid branch name');
+                        // 换仓库/分支后重新判定：同源仓库免验证，其余回待验证
+                        const cached = await getCachedPackages(db);
+                        const info = cached.packages ? containerOf(cached.packages, row.module_type)[row.module_name] : null;
+                        const same = info ? repoMatchesModule(g.host, g.owner, g.repo, info.repository) : false;
+                        await db.prepare('UPDATE module_domains SET git_repo = ?1, git_host = ?2, git_base = ?3, git_branch = ?4, status = ?5, version = version + 1, updated_at = ?6 WHERE fqdn = ?7')
+                            .bind(g.owner + '/' + g.repo, g.host, g.base, branch, same ? 'active' : 'verifying', now(), row.fqdn).run();
+                    } else if (row.mode === 'redirect') {
+                        const t = String(b.target_url || '').trim();
+                        if (!/^https:\/\/[^\s]{1,500}$/.test(t)) return fail('VALIDATION', 400, 'target_url must be an https:// URL');
+                        await db.prepare('UPDATE module_domains SET target_url = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(t, now(), row.fqdn).run();
+                    } else {
+                        // dns 模式仅允许改记录值（改类型需 CF 上先删旧记录，故不接受）
+                        const valErr = checkDnsValue(row.dns_type, b.dns_value);
+                        if (valErr) return fail('VALIDATION', 400, valErr);
+                        const newValue = String(b.dns_value).trim().toLowerCase();
+                        try {
+                            if (row.dns_record_id) {
+                                await cfDnsApi(env, 'PATCH', { content: newValue, ttl: 1 }, row.dns_record_id);
+                            } else {
+                                const rec = await cfDnsApi(env, 'POST', { type: row.dns_type, name: row.fqdn, content: newValue, proxied: true, ttl: 1, comment: 'ErisPulse module domain: ' + row.module_name });
+                                await db.prepare('UPDATE module_domains SET dns_record_id = ?1 WHERE fqdn = ?2').bind(rec.id, row.fqdn).run();
+                            }
+                        } catch (e) {
+                            return fail('UPSTREAM', 502, String(e.message || e).slice(0, 200));
+                        }
+                        await db.prepare('UPDATE module_domains SET dns_value = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newValue, now(), row.fqdn).run();
+                    }
+                } else {
+                    return fail('VALIDATION', 400, 'unknown action');
+                }
+                await audit(db, me.uid, 'domain.' + action, row.fqdn, '');
+                return json({ ok: true });
             }
 
             // 批量管理：一次 2FA 校验 + 一次 dispatch（ModuleRepo 脚本支持 items 数组）

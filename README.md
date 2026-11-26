@@ -37,8 +37,13 @@ The first registered account becomes admin.
 | `YUNHU_CLIENT_ID/SECRET` | Yunhu OAuth login |
 | `SMTP_HOST/PORT/USER/PASS`, `MAIL_FROM` | Email verification codes |
 | `MODULE_REPO_TOKEN` | Dispatch module-management operations to ModuleRepo |
+| `CF_DNS_TOKEN`, `CF_ZONE_ID` | Hosted domains (`<label>.plugin.erisdev.com`); unset = feature reports 503 UNCONFIGURED. Deploy guide: `domains-worker/README.md` |
 
 Unconfigured login methods are hidden automatically.
+
+## Hosted domains
+
+Published modules can get a free subdomain (`<label>.plugin.erisdev.com`) from the "Hosted domains" page: serve a git repo branch directly as the site (GitHub / Codeberg / self-hosted Gitea·Forgejo / GitLab), set up a 301 redirect, or point proxied DNS records at an own server. Limits: 2 domains per module and 10 per account. Ownership is verified against the module's registered repository or a verification file; abusive domains can be disabled by admins.
 
 ## OAuth integration
 
@@ -53,10 +58,12 @@ Each login method requires an OAuth app on the corresponding platform, with the 
 ## Structure
 
 ```
-public/          Frontend (static)
-public/vendor/   Third-party single-file libs (qrcode-generator, MIT)
-src/worker.js    Worker backend
-schema.sql       D1 schema
+public/             Frontend (static)
+public/vendor/      Third-party single-file libs (qrcode-generator, MIT)
+src/worker.js       Worker backend (identity, modules, domains API)
+src/domains.js      Hosted-domain site serving (*.plugin.erisdev.com)
+.github/workflows/  Wildcard certificate renewal for *.plugin.erisdev.com
+schema.sql          D1 schema
 ```
 
 ## License

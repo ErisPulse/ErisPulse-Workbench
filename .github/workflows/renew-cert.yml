@@ -1,0 +1,50 @@
+# *.plugin.erisdev.com 通配符证书：Let's Encrypt DNS-01 签发 → 上传 Cloudflare 自定义证书
+# 每月 5 号自动续期（Let's Encrypt 证书 90 天有效，月频率留足重试余量），可手动触发
+#
+# 需在仓库 Secrets 配置：
+#   CF_DNS_TOKEN  — Cloudflare API Token，权限 Zone.DNS Edit（限 erisdev.com zone），供 DNS-01 验证
+#   CF_SSL_TOKEN  — Cloudflare API Token，权限 Zone SSL and Certificates Edit（限 erisdev.com zone），供上传证书
+#   CF_ZONE_ID    — erisdev.com 的 Zone ID（CF 控制台域名概览页右下角）
+#
+# 替代方案：开通 ACM（约 $10/月/域）后证书由 Cloudflare 全托管，可停用本 workflow
+
+name: Renew wildcard certificate
+
+on:
+  schedule:
+    - cron: "0 3 5 * *"   # 每月 5 号 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install acme.sh
+        run: curl -s https://get.acme.sh | sh -s email=bot@erisdev.com
+
+      - name: Issue certificate (DNS-01)
+        env:
+          CF_Token: ${{ secrets.CF_DNS_TOKEN }}
+          CF_Zone_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          ~/.acme.sh/acme.sh --issue \
+            --server letsencrypt \
+            --dns dns_cf \
+            -d "*.plugin.erisdev.com" \
+            --keylength ec-256 \
+            --log
+
+      - name: Upload to Cloudflare custom certificates
+        env:
+          CF_SSL_TOKEN: ${{ secrets.CF_SSL_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+        run: |
+          curl -sS -X POST \
+            "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/custom_certificates" \
+            -H "Authorization: Bearer ${CF_SSL_TOKEN}" \
+            -F "certificate=@$HOME/.acme.sh/*.plugin.erisdev.com_ecc/fullchain.cer" \
+            -F "private_key=@$HOME/.acme.sh/*.plugin.erisdev.com_ecc/*.plugin.erisdev.com.key" \
+            | tee /dev/stderr | grep -q '"success":true'
+
+      - name: Show result
+        run: echo "certificate renewed and uploaded; Cloudflare serves the newest valid custom certificate"

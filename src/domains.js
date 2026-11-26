@@ -1,0 +1,146 @@
+// 模块托管域名站点服务（<label>.plugin.erisdev.com）
+// 注册表即共享 D1 的 module_domains 表；与主 Worker 同一入口部署，按 hostname 分流。
+//   git      → 拉取 GitHub/Codeberg/自建 Gitea·Forgejo/GitLab 分支文件，按扩展名给 MIME，版本化边缘缓存
+//   redirect → 301 到登记的 https 目标
+//   dns      → fetch(request) 原样回源（CNAME/A/AAAA 记录由 Workbench 经 CF API 代建）
+// 未注册的子域名落引导页；disabled/paused/verifying 各有状态页。
+
+const DOMAIN_SUFFIX = '.plugin.erisdev.com';
+const CACHE_TTL_S = 600;   // 本地缓存：分支内容更新/清理后最长 10 分钟
+const RAW_TTL_S = 60;      // raw 上游边缘缓存：兜底上游抖动
+const PATH_MAX = 512;
+const MIME_EXT = {
+    html: 'text/html; charset=utf-8', htm: 'text/html; charset=utf-8',
+    css: 'text/css; charset=utf-8',
+    js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8',
+    json: 'application/json', map: 'application/json',
+    txt: 'text/plain; charset=utf-8', md: 'text/plain; charset=utf-8', csv: 'text/csv; charset=utf-8',
+    xml: 'application/xml', pdf: 'application/pdf', wasm: 'application/wasm',
+    svg: 'image/svg+xml', ico: 'image/x-icon',
+    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', bmp: 'image/bmp',
+    mp4: 'video/mp4', webm: 'video/webm', mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg',
+    woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf', eot: 'application/vnd.ms-fontobject',
+};
+
+export const isDomainHost = host => host === DOMAIN_SUFFIX.slice(1) || host.endsWith(DOMAIN_SUFFIX);
+
+/** 状态页：与 Workbench 同风格的极简玻璃卡片 */
+function page(title, body, status = 200) {
+    const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f6f7f9;color:#0f1419;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.box{background:rgba(255,255,255,.82);backdrop-filter:blur(20px);border:1px solid #e5e8ec;border-radius:20px;box-shadow:0 24px 64px -24px rgba(15,23,42,.3);padding:2.2rem 2.4rem;max-width:420px;text-align:center}
+h1{font-size:1.15rem;margin:0 0 .6rem}p{font-size:.9rem;color:#5f6b7a;margin:.4rem 0;line-height:1.7}b{color:#3a94d0}
+a{color:#3a94d0;text-decoration:none}code{background:rgba(58,148,208,.1);border-radius:6px;padding:2px 8px;font-size:.85em}
+</style></head><body><div class="box"><h1>${title}</h1>${body}</div></body></html>`;
+    return new Response(html, { status, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+}
+
+/** 平台 → raw 文件 URL：github 走 CDN 域；gitea 风格（codeberg / 自建 Gitea·Forgejo）；gitlab 风格（自建 GitLab） */
+function rawUrl(host, base, owner, repo, branch, path) {
+    if (host === 'github') return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+    if (host === 'gitlab') return `${base}/${owner}/${repo}/-/raw/${branch}/${path}`;
+    return `${base || 'https://codeberg.org'}/${owner}/${repo}/raw/branch/${branch}/${path}`;
+}
+
+/** 路径规范化：拒绝穿越段与控制字符；通过返回段数组，否则 null */
+function normalizePath(pathname) {
+    let decoded;
+    try { decoded = decodeURIComponent(pathname); } catch (e) { return null; }
+    if (decoded.length > PATH_MAX || /[\u0000-\u001f\\]/.test(decoded)) return null;
+    const segs = decoded.split('/').filter(Boolean);
+    if (segs.some(s => s === '.' || s === '..')) return null;
+    return segs;
+}
+
+/** 分支文件 → 正确 MIME + nosniff 的响应，GET 时写入版本化缓存 */
+function serveBranchFile(upstream, filePath, cacheKey, cache, ctx, doCache) {
+    const ext = filePath.includes('.') ? filePath.split('.').pop().toLowerCase() : '';
+    const headers = {
+        'Content-Type': MIME_EXT[ext] || 'application/octet-stream',
+        'Cache-Control': `public, max-age=${CACHE_TTL_S}`,
+        'X-Content-Type-Options': 'nosniff',
+    };
+    const resp = new Response(upstream.body, { status: 200, headers });
+    if (doCache) ctx.waitUntil(cache.put(cacheKey, resp.clone()));
+    return resp;
+}
+
+export async function handleDomainRequest(request, env, ctx) {
+    const url = new URL(request.url);
+    const host = url.hostname.toLowerCase();
+
+    // ── 缓存清理：版本 +1，旧缓存条目自然淘汰 ──
+    const pm = url.pathname.match(/^\/purge-cache\/([a-z0-9.-]+)\/([\w-]+)$/);
+    if (pm && request.method === 'POST') {
+        const want = env.PURGE_PASSWORD
+            || ((await env.DB.prepare("SELECT value FROM settings WHERE key = 'purge_password'").first().catch(() => null)) || {}).value;
+        if (!want || pm[2] !== want) return new Response('forbidden', { status: 403 });
+        const r = await env.DB.prepare('UPDATE module_domains SET version = version + 1, updated_at = ?1 WHERE fqdn = ?2')
+            .bind(new Date().toISOString(), pm[1]).run();
+        if (!r.meta.changes) return new Response('unknown host', { status: 404 });
+        return new Response('ok');
+    }
+
+    // ── 非托管子域（含 plugin.erisdev.com 本身）→ 引导页 ──
+    if (!isDomainHost(host)) {
+        return page('ErisPulse 模块托管域名 · Hosted Domains', `<p>这里为生态模块提供免费子域名托管，形如 <code>模块名.plugin.erisdev.com</code>。</p><p>Free subdomains for ecosystem modules — sign in at <a href="https://workbench.erisdev.com/">workbench.erisdev.com</a> → 「托管域名 / Hosted Domains」 to claim one for your module.</p>`);
+    }
+
+    // ── 查注册表 ──
+    let row = null;
+    try {
+        row = await env.DB.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(host).first();
+    } catch (e) { /* D1 不可用时按未注册处理 */ }
+
+    if (!row) {
+        return page('域名尚未注册 · Not registered', `<p><b>${host}</b> 尚未在 ErisPulse Workbench 注册。</p><p>This label is not registered yet — sign in at workbench.erisdev.com to claim it for free.</p>`, 404);
+    }
+
+    // ── dns 模式：原样回源（disabled 拦截；verifying 也透传，源站要提供验证文件）──
+    if (row.mode === 'dns') {
+        if (row.status === 'disabled') return page('域名已被停用 · Disabled', '<p>该域名已被管理员停用。如认为存在误会，请联系 ErisPulse 团队。</p><p>This domain has been disabled by an admin. Contact the ErisPulse team if you believe this is a mistake.</p>', 403);
+        return fetch(request);
+    }
+
+    if (row.status === 'disabled') return page('域名已被停用 · Disabled', '<p>该域名已被管理员停用。如认为存在误会，请联系 ErisPulse 团队。</p><p>This domain has been disabled by an admin. Contact the ErisPulse team if you believe this is a mistake.</p>', 403);
+    if (row.status === 'paused') return page('域名已暂停 · Paused', '<p>所有者已暂停该站点。</p><p>This site has been paused by its owner.</p>', 503);
+    if (row.status === 'verifying') return page('等待所有权验证 · Pending verification', '<p>该域名正在等待所有权验证。</p><p>在 workbench.erisdev.com「托管域名」页完成验证后即可访问。</p><p>Ownership verification is pending — the site goes live once verified on the Hosted Domains page at workbench.erisdev.com.</p>', 503);
+
+    // ── redirect 模式 ──
+    if (row.mode === 'redirect') {
+        return new Response(null, { status: 301, headers: { Location: row.target_url, 'Cache-Control': 'public, max-age=86400' } });
+    }
+
+    // ── git 模式 ──
+    if (request.method !== 'GET' && request.method !== 'HEAD') {
+        return new Response('method not allowed', { status: 405 });
+    }
+    const segs = normalizePath(url.pathname);
+    if (!segs) return page('非法路径 · Invalid path', '', 400);
+    const [owner, repo] = String(row.git_repo || '').split('/');
+    if (!owner || !repo || !row.git_branch) return page('站点配置不完整 · Misconfigured site', '', 503);
+    const filePath = segs.length ? segs.join('/') : 'index.html';
+
+    // 版本化缓存键：清理 = version +1，旧键自然淘汰，无需逐 URL 删除
+    const cacheKey = new Request(`https://${host}/__v${row.version}/${filePath}`, { method: 'GET' });
+    const cache = caches.default;
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit;
+
+    const upstream = await fetch(rawUrl(row.git_host, row.git_base || '', owner, repo, row.git_branch, filePath), {
+        cf: { cacheTtl: RAW_TTL_S, cacheEverything: true },
+        headers: { 'User-Agent': 'ErisPulse-PluginDomains' },
+    });
+    if (!upstream.ok) {
+        // 目录访问没有尾斜杠时按目录补 index.html 再试一次
+        if (upstream.status === 404 && segs.length) {
+            const withIndex = await fetch(rawUrl(row.git_host, row.git_base || '', owner, repo, row.git_branch, filePath + '/index.html'), {
+                cf: { cacheTtl: RAW_TTL_S, cacheEverything: true },
+                headers: { 'User-Agent': 'ErisPulse-PluginDomains' },
+            });
+            if (withIndex.ok) return serveBranchFile(withIndex, filePath + '/index.html', cacheKey, cache, ctx, request.method === 'GET');
+        }
+        return page('404', `<p>分支 ${row.git_branch} 上不存在 <code>${filePath.replace(/[<>&"]/g, '')}</code>。</p><p>Not found on branch ${row.git_branch}.</p>`, 404);
+    }
+    return serveBranchFile(upstream, filePath, cacheKey, cache, ctx, request.method === 'GET');
+}

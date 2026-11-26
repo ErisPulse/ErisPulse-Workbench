@@ -40,6 +40,16 @@
     }
   },
   {
+    "slug": "domains",
+    "title": {
+      "zh-CN": "托管域名",
+      "zh-TW": "託管網域",
+      "en": "Hosted Domains",
+      "ja": "ホストドメイン",
+      "ru": "Домены"
+    }
+  },
+  {
     "slug": "claims",
     "title": {
       "zh-CN": "归属认领",

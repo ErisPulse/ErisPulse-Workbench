@@ -2,6 +2,12 @@ name = "erispulse-workbench"
 main = "src/worker.js"
 compatibility_date = "2026-01-01"
 
+# 模块托管域名站点服务与工作台同一 Worker，按 hostname 分流（src/domains.js）
+routes = [
+    { pattern = "plugin.erisdev.com/*", zone_name = "erisdev.com" },
+    { pattern = "*.plugin.erisdev.com/*", zone_name = "erisdev.com" },
+]
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
@@ -21,3 +27,9 @@ database_id = "e6a2b9b1-863c-4168-804b-87f8b23f61b0"
 # SMTP_HOST = ""
 # SMTP_PORT = "465"
 # SMTP_USER = ""
+# ── 托管域名（CF Zone ID 走 vars；DNS token 属敏感凭据走 wrangler secret put CF_DNS_TOKEN）──
+# 未配置时「托管域名」功能对用户提示 503 UNCONFIGURED
+# CF_ZONE_ID = ""
+# 可选：POST https://<域名>/purge-cache/<fqdn>/<密码> 强制某站点重新拉取分支内容；
+# 未设置时回退读 D1 settings 表 key=purge_password
+# PURGE_PASSWORD = ""

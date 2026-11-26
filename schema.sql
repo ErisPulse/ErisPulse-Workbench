@@ -131,3 +131,27 @@ CREATE TABLE IF NOT EXISTS module_claims (
     handled_by  TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_claims_status ON module_claims(status);
+
+-- 模块托管域名（<label>.plugin.erisdev.com；Workbench 代管，解析由 domains-worker 消费）
+CREATE TABLE IF NOT EXISTS module_domains (
+    fqdn          TEXT PRIMARY KEY,              -- 完整域名（小写）
+    label         TEXT NOT NULL,
+    uid           TEXT NOT NULL,                 -- 申请者
+    module_name   TEXT NOT NULL,
+    module_type   TEXT NOT NULL,
+    mode          TEXT NOT NULL,                 -- git | redirect | dns
+    git_repo      TEXT NOT NULL DEFAULT '',      -- owner/repo
+    git_host      TEXT NOT NULL DEFAULT '',      -- github | codeberg | gitea | gitlab
+    git_base      TEXT NOT NULL DEFAULT '',      -- 自建实例 origin（https://git.example.com），官方平台留空
+    git_branch    TEXT NOT NULL DEFAULT '',
+    target_url    TEXT NOT NULL DEFAULT '',      -- redirect 目标（https）
+    dns_type      TEXT NOT NULL DEFAULT '',      -- CNAME | A | AAAA
+    dns_value     TEXT NOT NULL DEFAULT '',
+    dns_record_id TEXT NOT NULL DEFAULT '',      -- Cloudflare DNS record id
+    verify_code   TEXT NOT NULL DEFAULT '',
+    version       INTEGER NOT NULL DEFAULT 1,    -- 内容缓存版本（+1 即全站失效）
+    status        TEXT NOT NULL DEFAULT 'verifying', -- verifying | active | paused | disabled
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_domains_uid ON module_domains(uid);
