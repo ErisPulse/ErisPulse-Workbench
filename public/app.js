@@ -623,10 +623,11 @@ function niceSelectify(root) {
             wrap.classList.remove('open');
             btn.setAttribute('aria-expanded', 'false');
             document.removeEventListener('click', onDoc, true);
-            window.removeEventListener('scroll', close, true);
+            window.removeEventListener('scroll', onScroll, true);
             window.removeEventListener('resize', close);
         };
         const onDoc = e => { if (pop && !pop.contains(e.target) && !wrap.contains(e.target)) close(); };
+        const onScroll = e => { if (pop && (pop.contains(e.target) || wrap.contains(e.target))) return; close(); };
 
         const setActive = i => {
             activeIdx = i;
@@ -676,7 +677,7 @@ function niceSelectify(root) {
             wrap.classList.add('open');
             btn.setAttribute('aria-expanded', 'true');
             document.addEventListener('click', onDoc, true);
-            window.addEventListener('scroll', close, true);
+            window.addEventListener('scroll', onScroll, true);
             window.addEventListener('resize', close);
         };
 
@@ -1215,8 +1216,8 @@ async function viewDomains(v) {
             </div>
             <div class="field"><label>${esc(dm('label'))} *</label>
                 <div style="display:flex;gap:6px;align-items:baseline">
-                    <input id="dm-label" placeholder="mybot" style="max-width:220px" autocomplete="off" spellcheck="false">
                     <span class="mono muted" style="font-size:13px;flex:none">plugin-</span>
+                    <input id="dm-label" placeholder="mybot" style="max-width:220px" autocomplete="off" spellcheck="false">
                     <span class="muted" style="font-size:12px">.erisdev.com</span>
                 </div>
                 <div class="hint" id="dm-label-hint"></div>
