@@ -1516,7 +1516,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 }
 
                 await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, route_id, verify_code, version, status, created_at, updated_at)
-                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,1,?16,?17,?17)`)
+                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,1,?17,?18,?18)`)
                     .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.route_id, vals.verify_code, status, now()).run();
                 await audit(db, me.uid, 'domain.apply', fqdn, mode);
                 if (status === 'active') {
