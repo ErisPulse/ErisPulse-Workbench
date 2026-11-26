@@ -43,7 +43,7 @@ Unconfigured login methods are hidden automatically.
 
 ## Hosted domains
 
-Published modules can get a free subdomain (`plugin-<label>.erisdev.com`) from the "Hosted domains" page: serve a git repo branch directly as the site (GitHub / Codeberg / self-hosted Gitea·Forgejo / GitLab), set up a 301 redirect, or point proxied DNS records at an own server. Limits: 2 domains per module and 10 per account. Ownership is verified against the module's registered repository or a verification file; abusive domains can be disabled by admins.
+Published modules can get a free subdomain (`plugin-<label>.erisdev.com`) from the "Hosted domains" page: serve a git repo branch directly as the site (GitHub / Codeberg / self-hosted Gitea·Forgejo / GitLab), upload a static site zip (≤5MB, hosted on R2), set up a 301 redirect, or point proxied DNS records at an own server. Limits: 2 domains per module and 10 per account. Ownership is verified against the module's registered repository or a verification file; abusive domains can be disabled by admins.
 
 ## OAuth integration
 

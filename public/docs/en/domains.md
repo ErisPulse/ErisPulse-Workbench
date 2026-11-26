@@ -11,6 +11,7 @@ Request a free subdomain for your published module: `plugin-<label>.erisdev.com`
 
 | Mode | Description | Use case |
 |------|-------------|----------|
+| **Upload static site** (zip ≤5MB) | Upload a zip (≤20MB decompressed), hosted directly on platform R2 — no server needed; use "Re-upload" in the row to update content | Pure static pages without any server or Pages setup |
 | **Repo branch** (recommended) | Serve a git repo branch directly as the site; GitHub, Codeberg and self-hosted Gitea/Forgejo/GitLab instances supported (must be publicly reachable over HTTPS) | Module docs and demos live in your repo |
 | **Redirect** | 301-redirect visitors to an https URL you provide | Content is hosted elsewhere; you just want a memorable entry |
 | **Own server** (advanced) | The platform creates a proxied DNS record (CNAME / A / AAAA) to your server; traffic goes through Cloudflare | Self-hosted servers and deployments |

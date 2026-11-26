@@ -3,6 +3,7 @@
 // 完全开源，接受社区监督。
 
 import { isDomainHost, isDomainGate, handleDomainRequest } from './domains.js';
+import { R2_MAX_ZIP, R2_TOTAL_LIMIT, r2PutObject, r2DeleteObject, r2ListObjects, r2AttachDomain, r2SetDomainEnabled, r2DetachDomain, r2CreateBucket, r2DeleteBucket, r2AddBytes, r2GetTotalBytes, r2EmptyBucket, extractZip, mimeOf } from './r2.js';
 
 // ── OAuth 上游（作为客户端登录）──
 const OAUTH_UPSTREAM = {
@@ -560,6 +561,8 @@ async function ensureTables(db) {
     await db.prepare('CREATE INDEX IF NOT EXISTS idx_domains_uid ON module_domains(uid)').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN git_base TEXT').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN route_id TEXT').run().catch(() => {});
+    await db.prepare('ALTER TABLE module_domains ADD COLUMN r2_bucket TEXT').run().catch(() => {});
+    await db.prepare('ALTER TABLE module_domains ADD COLUMN r2_bytes INTEGER').run().catch(() => {});
     // 插件域名流量预算表（护栏用，抽样计数）
     await db.prepare('CREATE TABLE IF NOT EXISTS domain_quota (day TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)').run().catch(() => {});
 }
@@ -779,6 +782,69 @@ async function listModules(env, request) {
         }
     }
     return json({ modules: out, syncing: (pending.results || []).length > 0 });
+}
+
+// ═══ R2 上传模式业务流（机械层在 r2.js）═══
+async function domainUploadCommonChecks(db, env, me, body, file) {
+    const labelErr = await checkDomainLabel(db, body.label);
+    if (labelErr) return freason('VALIDATION', 400, labelErr[0], labelErr[1]);
+    const cached = await getCachedPackages(db);
+    if (!cached.packages) return fail('UPSTREAM', 502, cached.reason || 'failed to fetch packages.json');
+    const info = containerOf(cached.packages, body.module_type)[body.module_name];
+    if (!info) return freason('NOT_FOUND', 404, 'module_missing', 'module not found');
+    if (!isStaff(me)) {
+        const uids = await myUids();
+        if (!uids.has(info.submitted_by_uid || '')) return freason('FORBIDDEN', 403, 'not_owner', 'only the module owner can request a hosted domain');
+    }
+    const modCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE module_name = ?1 AND module_type = ?2').bind(body.module_name, body.module_type).first()).n;
+    if (modCnt >= DOMAIN_LIMIT_PER_MODULE) return freason('LIMIT', 429, 'limit_module', 'module domain limit reached (' + DOMAIN_LIMIT_PER_MODULE + ')');
+    const userCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE uid = ?1').bind(me.uid).first()).n;
+    if (userCnt >= DOMAIN_LIMIT_PER_USER) return freason('LIMIT', 429, 'limit_user', 'account domain limit reached (' + DOMAIN_LIMIT_PER_USER + ')');
+    if (!file || typeof file === 'string') return freason('VALIDATION', 400, 'zip_bad', 'zip file field missing');
+    if (file.size > R2_MAX_ZIP) return freason('VALIDATION', 400, 'zip_size', 'zip must be ≤5MB');
+    const totalNow = await r2GetTotalBytes(db);
+    if (totalNow + R2_MAX_ZIP * 20 > R2_TOTAL_LIMIT) return freason('LIMIT', 429, 'storage_limit', 'global R2 storage budget reached');
+    return null;
+}
+
+async function handleDomainUpload(request, env, db, me) {
+    const b = await request.formData().catch(() => null);
+    if (!b) return freason('VALIDATION', 400, 'bad_form', 'multipart form required');
+    const file = b.get('file');
+    const body = {
+        module_name: String(b.get('module_name') || ''), module_type: String(b.get('module_type') || 'module'),
+        label: String(b.get('label') || '').trim().toLowerCase(), totp_code: String(b.get('totp_code') || ''),
+    };
+    const totpErr = await requireTotp(db, me, body);
+    if (totpErr) return totpErr;
+    if (!env.CF_DNS_TOKEN || !env.R2_ACCOUNT_ID) return freason('UNCONFIGURED', 503, 'not_configured', 'hosted domains not configured (CF_DNS_TOKEN / R2_ACCOUNT_ID missing)');
+    const quotaErr = await domainUploadCommonChecks(db, env, me, body, file);
+    if (quotaErr) return quotaErr;
+    const extracted = await extractZip(await file.arrayBuffer()).catch(e => freason('VALIDATION', 400, e.reason || 'zip_bad', e.message));
+    if (extracted.error) return extracted;
+
+    const fqdn = domainFqdn(body.label);
+    const bucket = ('ep-' + body.label.slice(0, 58)).toLowerCase();
+    let rawTotal = 0;
+    try {
+        await r2CreateBucket(env, bucket);
+        await r2AttachDomain(env, bucket, fqdn, DOMAIN_BASE);
+        for (const f of extracted) { await r2PutObject(env, bucket, f.name, f.bytes, mimeOf(f.name)); rawTotal += f.bytes.length; }
+        await r2AddBytes(db, rawTotal);
+    } catch (e) {
+        // 半创建回滚：摘域/清桶/删桶
+        try { await r2DetachDomain(env, bucket, fqdn); } catch (e2) { /* 尽力 */ }
+        try { await r2EmptyBucket(env, db, bucket); } catch (e2) { /* 尽力 */ }
+        try { await r2DeleteBucket(env, bucket); } catch (e2) { /* 尽力 */ }
+        return freason('UPSTREAM', 502, e.reason || 'upstream_fail', String(e.message || e).slice(0, 200));
+    }
+    await db.prepare("INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, r2_bucket, r2_bytes, verify_code, version, status, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,'upload',?6,?7,'',1,'active',?8,?8)")
+        .bind(fqdn, body.label, me.uid, body.module_name, body.module_type, bucket, rawTotal, now()).run();
+    await audit(db, me.uid, 'domain.apply', fqdn, 'upload');
+    notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
+        '你上传的静态站点已部署，现在可以通过 https://' + fqdn + ' 访问。',
+        'Your uploaded static site is now live at https://' + fqdn + '.');
+    return json({ ok: true, fqdn, status: 'active', files: extracted.length, bytes: rawTotal });
 }
 
 // ═══════════════════════ 路由 ═══════════════════════
@@ -1345,6 +1411,10 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ }
                         await db.prepare('UPDATE module_domains SET dns_record_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run();
                     }
+                    // upload 模式停用：关闭公开访问
+                    if (dma[2] === 'disable' && row.mode === 'upload' && row.r2_bucket) {
+                        try { await r2SetDomainEnabled(env, row.r2_bucket, row.fqdn, false); } catch (e) { /* 忽略 */ }
+                    }
                     await db.prepare('UPDATE module_domains SET status = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newStatus, now(), row.fqdn).run();
                     await audit(db, me.uid, 'domain.' + dma[2], row.fqdn, row.uid);
                     if (dma[2] === 'disable') {
@@ -1419,6 +1489,10 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
 
             // 申请：登录 + TOTP + 模块所有权 + 限额（每模块 2 个 / 每用户 10 个）
             if (path === '/api/domains' && method === 'POST') {
+                // 上传模式走 multipart（zip 包），其余模式为 JSON
+                if ((request.headers.get('Content-Type') || '').includes('multipart/form-data')) {
+                    return handleDomainUpload(request, env, db, me);
+                }
                 const b = await request.json().catch(() => ({}));
                 const totpErr = await requireTotp(db, me, b);
                 if (totpErr) return totpErr;
@@ -1570,6 +1644,36 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 return json({ ok: true, status: 'active' });
             }
 
+            // 重传（upload 模式）：multipart zip，覆盖桶内容
+            let du = path.match(/^\/api\/domains\/([a-z0-9-]{1,63})\/reupload$/);
+            if (du && method === 'POST') {
+                const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(du[1])).first();
+                if (!row) return freason('NOT_FOUND', 404, 'domain_missing', 'domain not found');
+                if (row.mode !== 'upload' || !row.r2_bucket) return freason('VALIDATION', 400, 'bad_mode', 'reupload applies to uploaded sites only');
+                if (row.uid !== me.uid && !isStaff(me)) return freason('FORBIDDEN', 403, 'not_owner', 'only the owner can manage this domain');
+                if (row.status === 'disabled') return freason('FORBIDDEN', 403, 'disabled_domain', 'this domain has been disabled by an admin');
+                const b = await request.formData().catch(() => null);
+                if (!b) return freason('VALIDATION', 400, 'bad_form', 'multipart form required');
+                const totpErr = await requireTotp(db, me, { totp_code: String(b.get('totp_code') || '') });
+                if (totpErr) return totpErr;
+                const file = b.get('file');
+                if (!file || typeof file === 'string') return freason('VALIDATION', 400, 'zip_bad', 'zip file field missing');
+                if (file.size > R2_MAX_ZIP) return freason('VALIDATION', 400, 'zip_size', 'zip must be ≤5MB');
+                const totalNow = await r2GetTotalBytes(db);
+                if (totalNow + R2_MAX_ZIP * 20 > R2_TOTAL_LIMIT) return freason('LIMIT', 429, 'storage_limit', 'global R2 storage budget reached');
+                const extracted = await extractZip(await file.arrayBuffer()).catch(e => freason('VALIDATION', 400, e.reason || 'zip_bad', e.message));
+                if (extracted.error) return extracted;
+                const oldObjs = await r2ListObjects(env, row.r2_bucket);
+                let freed = 0;
+                for (const o of oldObjs) { await r2DeleteObject(env, row.r2_bucket, o.key); freed += o.size; }
+                let rawTotal = 0;
+                for (const f of extracted) { await r2PutObject(env, row.r2_bucket, f.name, f.bytes, mimeOf(f.name)); rawTotal += f.bytes.length; }
+                await r2AddBytes(db, rawTotal - freed);
+                await db.prepare('UPDATE module_domains SET r2_bytes = ?1, updated_at = ?2 WHERE fqdn = ?3').bind(rawTotal, now(), row.fqdn).run();
+                await audit(db, me.uid, 'domain.reupload', row.fqdn, '');
+                return json({ ok: true, files: extracted.length, bytes: rawTotal });
+            }
+
             // 管理：pause / resume / delete / update（update 改目标后回待验证，dns 模式同步 CF 记录）
             let dmm = path.match(/^\/api\/domains\/([a-z0-9-]{1,63})\/manage$/);
             if (dmm && method === 'POST') {
@@ -1588,6 +1692,10 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ }
                         await db.prepare('UPDATE module_domains SET dns_record_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run();
                     }
+                    // upload 模式：关闭自定义域公开访问（桶与内容保留）
+                    if (row.mode === 'upload' && row.r2_bucket) {
+                        try { await r2SetDomainEnabled(env, row.r2_bucket, row.fqdn, false); } catch (e) { /* 忽略 */ }
+                    }
                     await db.prepare("UPDATE module_domains SET status = 'paused', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
                 } else if (action === 'resume') {
                     if (row.status !== 'paused') return freason('VALIDATION', 400, 'bad_state', 'only paused domains can be resumed');
@@ -1600,12 +1708,21 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         if (!rec) return fail('UPSTREAM', 502, 'failed to recreate the DNS record');
                         await db.prepare('UPDATE module_domains SET dns_record_id = ?1 WHERE fqdn = ?2').bind(rec.id, row.fqdn).run();
                     }
+                    // upload 模式恢复：重新开启公开访问
+                    if (row.mode === 'upload' && row.r2_bucket) {
+                        try { await r2SetDomainEnabled(env, row.r2_bucket, row.fqdn, true); } catch (e) { /* 忽略 */ }
+                    }
                     await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
                 } else if (action === 'delete') {
                     // 撤路由 + 撤记录，均已不存在时忽略
                     if (env.CF_DNS_TOKEN) {
                         if (row.route_id) { try { await cfRouteApi(env, 'DELETE', null, row.route_id); } catch (e) { /* 忽略 */ } }
                         if (row.dns_record_id) { try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ } }
+                    }
+                    if (row.mode === 'upload' && row.r2_bucket) {
+                        try { await r2DetachDomain(env, row.r2_bucket, row.fqdn); } catch (e) { /* 忽略 */ }
+                        try { await r2EmptyBucket(env, db, row.r2_bucket); } catch (e) { /* 忽略 */ }
+                        try { await r2DeleteBucket(env, row.r2_bucket); } catch (e) { /* 忽略 */ }
                     }
                     await db.prepare('DELETE FROM module_domains WHERE fqdn = ?1').bind(row.fqdn).run();
                 } else if (action === 'update') {

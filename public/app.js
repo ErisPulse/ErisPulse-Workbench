@@ -64,13 +64,14 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
             desc: '为已发布的模块申请免费托管域名：plugin-<前缀>.erisdev.com',
             apply: '申请新域名', mode: '接入方式',
             modeGit: '仓库分支（推荐）', hintGit: '指定 git 仓库与分支，分支内容直接作为站点展示，支持 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
+            modeUpload: '上传静态站点（zip ≤5MB）', hintUpload: '上传 zip 包（≤5MB），由平台 R2 直接托管，无需自己的服务器', pickZip: '选择站点 zip 包', reupload: '重新上传', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重定向', hintRedirect: '访问时 301 跳转到你填写的 https 地址',
             modeDns: '自有服务器（高级）', hintDns: '把域名解析到你自己的服务器（CNAME / A / AAAA）',
             module: '选择模块', mineOnly: '仅限你拥有的已收录模块',
             label: '域名前缀', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '仓库平台', hintSelfHost: '自建实例需公网可经 HTTPS 访问；GitHub/Codeberg 会自动识别',
             repo: '仓库地址', branch: '分支', target: '跳转目标（https://）', dnsType: '记录类型', dnsValue: '记录值',
-            rLabelInvalid: '前缀仅限小写字母、数字与中缀连字符', rLabelReserved: '该前缀为保留名', rLabelTaken: '该前缀已被占用', rLimitModule: '该模块的域名数已达上限', rLimitUser: '该账户的域名数已达上限', rNotOwner: '仅模块所有者可操作', rBadRepo: '仓库地址不合法', rBadBranch: '分支名不合法', rBadTarget: '跳转目标需为 https:// URL', rBadDnsValue: '记录值不合法', rVerifyFailed: '验证未通过', rDisabled: '该域名已被停用',
+            rLabelInvalid: '前缀仅限小写字母、数字与中缀连字符', rLabelReserved: '该前缀为保留名', rLabelTaken: '该前缀已被占用', rLimitModule: '该模块的域名数已达上限', rLimitUser: '该账户的域名数已达上限', rNotOwner: '仅模块所有者可操作', rBadRepo: '仓库地址不合法', rBadBranch: '分支名不合法', rBadTarget: '跳转目标需为 https:// URL', rBadDnsValue: '记录值不合法', rVerifyFailed: '验证未通过', rDisabled: '该域名已被停用', rZipSize: 'zip 需 ≤5MB', rZipBad: 'zip 包无法解析', rStorage: '平台存储预算已达上限',
             submit: '提交申请', list: '我的域名', empty: '还没有托管域名',
             stVerifying: '待验证', stActive: '生效中', stPaused: '已暂停', stDisabled: '已停用',
             verify: '验证', pause: '暂停', resume: '恢复',
@@ -147,13 +148,14 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
             desc: '為已發布的模組申請免費託管網域：plugin-<前綴>.erisdev.com',
             apply: '申請新網域', mode: '接入方式',
             modeGit: '儲存庫分支（推薦）', hintGit: '指定 git 儲存庫與分支，分支內容直接作為站點展示，支援 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
+            modeUpload: '上傳靜態站點（zip ≤5MB）', hintUpload: '上傳 zip 包（≤5MB），由平台 R2 直接託管，無需自己的伺服器', pickZip: '選擇站點 zip 包', reupload: '重新上傳', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重新導向', hintRedirect: '存取時 301 轉址到你填寫的 https 位址',
             modeDns: '自有伺服器（進階）', hintDns: '把網域解析到你自己的伺服器（CNAME / A / AAAA）',
             module: '選擇模組', mineOnly: '僅限你擁有的已收錄模組',
             label: '網域前綴', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '儲存庫平台', hintSelfHost: '自建實例需公網可經 HTTPS 存取；GitHub/Codeberg 會自動識別',
             repo: '儲存庫位址', branch: '分支', target: '轉址目標（https://）', dnsType: '記錄類型', dnsValue: '記錄值',
-            rLabelInvalid: '前綴僅限小寫字母、數字與中綴連字號', rLabelReserved: '該前綴為保留名', rLabelTaken: '該前綴已被占用', rLimitModule: '該模組的網域數已達上限', rLimitUser: '該帳戶的網域數已達上限', rNotOwner: '僅模組所有者可操作', rBadRepo: '儲存庫位址不合法', rBadBranch: '分支名不合法', rBadTarget: '轉址目標需為 https:// URL', rBadDnsValue: '記錄值不合法', rVerifyFailed: '驗證未通過', rDisabled: '該網域已被停用',
+            rLabelInvalid: '前綴僅限小寫字母、數字與中綴連字號', rLabelReserved: '該前綴為保留名', rLabelTaken: '該前綴已被占用', rLimitModule: '該模組的網域數已達上限', rLimitUser: '該帳戶的網域數已達上限', rNotOwner: '僅模組所有者可操作', rBadRepo: '儲存庫位址不合法', rBadBranch: '分支名不合法', rBadTarget: '轉址目標需為 https:// URL', rBadDnsValue: '記錄值不合法', rVerifyFailed: '驗證未通過', rDisabled: '該網域已被停用', rZipSize: 'zip 需 ≤5MB', rZipBad: 'zip 包無法解析', rStorage: '平台存儲預算已達上限',
             submit: '提交申請', list: '我的網域', empty: '還沒有託管網域',
             stVerifying: '待驗證', stActive: '生效中', stPaused: '已暫停', stDisabled: '已停用',
             verify: '驗證', pause: '暫停', resume: '恢復',
@@ -230,13 +232,14 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
             desc: 'Request a free hosted domain for your published module: plugin-<label>.erisdev.com',
             apply: 'New Domain', mode: 'Integration Mode',
             modeGit: 'Repo Branch (Recommended)', hintGit: 'Serve a git repo branch directly as the site — GitHub, Codeberg, self-hosted Gitea/Forgejo and GitLab supported',
+            modeUpload: 'Upload Static Site (zip ≤5MB)', hintUpload: 'Upload a zip (≤5MB); hosted on platform R2 — no server needed', pickZip: 'Pick site zip', reupload: 'Re-upload', errZipSize: 'zip must be ≤5MB',
             modeRedirect: 'Redirect', hintRedirect: '301-redirect visitors to an https URL you provide',
             modeDns: 'Own Server (Advanced)', hintDns: 'Point the domain at your own server (CNAME / A / AAAA)',
             module: 'Select Module', mineOnly: 'Only your registered modules',
             label: 'Domain Label', labelAvail: (f) => `plugin-${f}.erisdev.com is available`,
             platform: 'Repository Platform', hintSelfHost: 'Self-hosted instances must be publicly reachable over HTTPS; GitHub/Codeberg URLs are auto-detected',
             repo: 'Repository URL', branch: 'Branch', target: 'Redirect Target (https://)', dnsType: 'Record Type', dnsValue: 'Record Value',
-            rLabelInvalid: 'Label must be lowercase letters, digits and inner hyphens', rLabelReserved: 'This label is reserved', rLabelTaken: 'This label is already taken', rLimitModule: 'This module reached its domain limit', rLimitUser: 'This account reached its domain limit', rNotOwner: 'Only the module owner can do this', rBadRepo: 'Invalid repository URL', rBadBranch: 'Invalid branch name', rBadTarget: 'Target must be an https:// URL', rBadDnsValue: 'Invalid record value', rVerifyFailed: 'Verification failed', rDisabled: 'This domain has been disabled',
+            rLabelInvalid: 'Label must be lowercase letters, digits and inner hyphens', rLabelReserved: 'This label is reserved', rLabelTaken: 'This label is already taken', rLimitModule: 'This module reached its domain limit', rLimitUser: 'This account reached its domain limit', rNotOwner: 'Only the module owner can do this', rBadRepo: 'Invalid repository URL', rBadBranch: 'Invalid branch name', rBadTarget: 'Target must be an https:// URL', rBadDnsValue: 'Invalid record value', rVerifyFailed: 'Verification failed', rDisabled: 'This domain has been disabled', rZipSize: 'zip must be ≤5MB', rZipBad: 'zip could not be parsed', rStorage: 'platform storage budget reached',
             submit: 'Submit Request', list: 'My Domains', empty: 'No hosted domains yet',
             stVerifying: 'Verifying', stActive: 'Active', stPaused: 'Paused', stDisabled: 'Disabled',
             verify: 'Verify', pause: 'Pause', resume: 'Resume',
@@ -313,13 +316,14 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
             desc: '公開済みモジュールに無料のホストドメインを申請：plugin-<プレフィックス>.erisdev.com',
             apply: '新規ドメイン申請', mode: '接続方式',
             modeGit: 'リポジトリ分支（推奨）', hintGit: 'git リポジトリのブランチ内容をそのままサイトとして表示。GitHub / Codeberg / 自前 Gitea・Forgejo / GitLab に対応',
+            modeUpload: '静的サイト更新（zip ≤5MB）', hintUpload: 'zip（≤5MB）をアップロードするとプラットフォームの R2 で直接ホストされます', pickZip: 'サイト zip を選択', reupload: '再アップロード', errZipSize: 'zip は 5MB 以下',
             modeRedirect: 'リダイレクト', hintRedirect: 'アクセス時に入力した https アドレスへ 301 転送',
             modeDns: '自前サーバー（上級）', hintDns: 'ドメインを自分のサーバーへ解決（CNAME / A / AAAA）',
             module: 'モジュールを選択', mineOnly: '自分が所有する登録済みモジュールのみ',
             label: 'ドメインプレフィックス', labelAvail: (f) => `plugin-${f}.erisdev.com は利用可能`,
             platform: 'リポジトリプラットフォーム', hintSelfHost: '自前インスタンスは HTTPS で公開到達可能である必要があります。GitHub/Codeberg は自動判別',
             repo: 'リポジトリ URL', branch: 'ブランチ', target: '転送先（https://）', dnsType: 'レコード種別', dnsValue: 'レコード値',
-            rLabelInvalid: 'プレフィックスは小文字英字・数字・内部ハイフンのみ', rLabelReserved: 'このプレフィックスは予約済み', rLabelTaken: 'このプレフィックスは使用中', rLimitModule: 'このモジュールのドメイン数が上限に達しました', rLimitUser: 'このアカウントのドメイン数が上限に達しました', rNotOwner: 'モジュールの所有者のみ操作できます', rBadRepo: 'リポジトリ URL が不正です', rBadBranch: 'ブランチ名が不正です', rBadTarget: '転送先は https:// URL を指定してください', rBadDnsValue: 'レコード値が不正です', rVerifyFailed: '検証に失敗しました', rDisabled: 'このドメインは停止されています',
+            rLabelInvalid: 'プレフィックスは小文字英字・数字・内部ハイフンのみ', rLabelReserved: 'このプレフィックスは予約済み', rLabelTaken: 'このプレフィックスは使用中', rLimitModule: 'このモジュールのドメイン数が上限に達しました', rLimitUser: 'このアカウントのドメイン数が上限に達しました', rNotOwner: 'モジュールの所有者のみ操作できます', rBadRepo: 'リポジトリ URL が不正です', rBadBranch: 'ブランチ名が不正です', rBadTarget: '転送先は https:// URL を指定してください', rBadDnsValue: 'レコード値が不正です', rVerifyFailed: '検証に失敗しました', rDisabled: 'このドメインは停止されています', rZipSize: 'zip は 5MB 以下', rZipBad: 'zip を解析できません', rStorage: 'プラットフォームの保存上限に達しました',
             submit: '申請を送信', list: 'マイドメイン', empty: 'ホストドメインはまだありません',
             stVerifying: '検証中', stActive: '有効', stPaused: '一時停止', stDisabled: '停止中',
             verify: '検証', pause: '一時停止', resume: '再開',
@@ -396,13 +400,14 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
             desc: 'Бесплатный домен для опубликованного модуля: plugin-<метка>.erisdev.com',
             apply: 'Новый домен', mode: 'Способ подключения',
             modeGit: 'Ветка репозитория (рекомендуется)', hintGit: 'Содержимое ветки git-репозитория публикуется как сайт — GitHub, Codeberg, свои Gitea/Forgejo и GitLab',
+            modeUpload: 'Загрузить статический сайт (zip ≤5MB)', hintUpload: 'Загрузите zip (≤5MB) — хостинг на R2 платформы, свой сервер не нужен', pickZip: 'Выберите zip сайта', reupload: 'Перезагрузить', errZipSize: 'zip должен быть ≤5MB',
             modeRedirect: 'Перенаправление', hintRedirect: '301-редирект на указанный https-адрес',
             modeDns: 'Свой сервер (расширенный)', hintDns: 'Направить домен на свой сервер (CNAME / A / AAAA)',
             module: 'Выберите модуль', mineOnly: 'Только ваши зарегистрированные модули',
             label: 'Метка домена', labelAvail: (f) => `plugin-${f}.erisdev.com доступен`,
             platform: 'Платформа репозитория', hintSelfHost: 'Собственные инстансы должны быть доступны по HTTPS из интернета; GitHub/Codeberg распознаются автоматически',
             repo: 'URL репозитория', branch: 'Ветка', target: 'Цель перенаправления (https://)', dnsType: 'Тип записи', dnsValue: 'Значение записи',
-            rLabelInvalid: 'Метка: строчные буквы, цифры и внутренние дефисы', rLabelReserved: 'Эта метка зарезервирована', rLabelTaken: 'Эта метка уже занята', rLimitModule: 'Лимит доменов для модуля исчерпан', rLimitUser: 'Лимит доменов для аккаунта исчерпан', rNotOwner: 'Доступно только владельцу модуля', rBadRepo: 'Неверный URL репозитория', rBadBranch: 'Неверное имя ветки', rBadTarget: 'Цель должна быть https:// URL', rBadDnsValue: 'Неверное значение записи', rVerifyFailed: 'Проверка не пройдена', rDisabled: 'Этот домен отключён',
+            rLabelInvalid: 'Метка: строчные буквы, цифры и внутренние дефисы', rLabelReserved: 'Эта метка зарезервирована', rLabelTaken: 'Эта метка уже занята', rLimitModule: 'Лимит доменов для модуля исчерпан', rLimitUser: 'Лимит доменов для аккаунта исчерпан', rNotOwner: 'Доступно только владельцу модуля', rBadRepo: 'Неверный URL репозитория', rBadBranch: 'Неверное имя ветки', rBadTarget: 'Цель должна быть https:// URL', rBadDnsValue: 'Неверное значение записи', rVerifyFailed: 'Проверка не пройдена', rDisabled: 'Этот домен отключён', rZipSize: 'zip должен быть ≤5MB', rZipBad: 'не удалось разобрать zip', rStorage: 'бюджет хранилища платформы исчерпан',
             submit: 'Отправить заявку', list: 'Мои домены', empty: 'Доменов пока нет',
             stVerifying: 'Ожидает проверки', stActive: 'Активен', stPaused: 'Приостановлен', stDisabled: 'Отключён',
             verify: 'Проверить', pause: 'Пауза', resume: 'Возобновить',
@@ -708,6 +713,7 @@ function niceSelectify(root) {
 
 async function api(path, opts = {}) {
     const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+    if (opts.body instanceof FormData) delete headers['Content-Type'];
     if (S.token) headers.Authorization = 'Bearer ' + S.token;
     const resp = await fetch(path, { ...opts, headers });
     const data = await resp.json().catch(() => ({}));
@@ -1214,7 +1220,7 @@ function renderModRows(v) {
 async function viewDomains(v) {
     const dm = k => t('dm.' + k);
     // API 返回机读 reason（蛇形键）→ 前端查 i18n 字典，缺失时回退英文 message
-    const DM_REASON_MAP = { label_invalid: 'rLabelInvalid', label_reserved: 'rLabelReserved', label_taken: 'rLabelTaken', limit_module: 'rLimitModule', limit_user: 'rLimitUser', not_owner: 'rNotOwner', bad_repo: 'rBadRepo', bad_branch: 'rBadBranch', bad_target: 'rBadTarget', bad_dns_value: 'rBadDnsValue', verify_failed: 'rVerifyFailed', disabled_domain: 'rDisabled' };
+    const DM_REASON_MAP = { label_invalid: 'rLabelInvalid', label_reserved: 'rLabelReserved', label_taken: 'rLabelTaken', limit_module: 'rLimitModule', limit_user: 'rLimitUser', not_owner: 'rNotOwner', bad_repo: 'rBadRepo', bad_branch: 'rBadBranch', bad_target: 'rBadTarget', bad_dns_value: 'rBadDnsValue', verify_failed: 'rVerifyFailed', disabled_domain: 'rDisabled', zip_size: 'rZipSize', zip_bad: 'rZipBad', storage_limit: 'rStorage' };
     const dmErr = (d, fb) => { const v = d && d.reason && DM_REASON_MAP[d.reason] && t('dm.' + DM_REASON_MAP[d.reason]); return (v && v !== 'dm.' + DM_REASON_MAP[d.reason]) ? v : (d.message || d.error || fb); };
     v.innerHTML = `<div class="page-title">${esc(t('nav.domains'))}</div><div class="page-desc">${esc(dm('desc'))}</div>
         <div class="card" style="max-width:860px">
@@ -1223,6 +1229,7 @@ async function viewDomains(v) {
                 <div class="field"><label>${esc(dm('module'))} *</label><select id="dm-module"></select><div class="hint">${esc(dm('mineOnly'))}</div></div>
                 <div class="field"><label>${esc(dm('mode'))}</label><select id="dm-mode">
                     <option value="git">${esc(dm('modeGit'))}</option>
+                    <option value="upload">${esc(dm('modeUpload'))}</option>
                     <option value="redirect">${esc(dm('modeRedirect'))}</option>
                     <option value="dns">${esc(dm('modeDns'))}</option>
                 </select><div class="hint" id="dm-mode-hint"></div></div>
@@ -1256,6 +1263,12 @@ async function viewDomains(v) {
                     <div class="field"><label>${esc(dm('dnsValue'))} *</label><input id="dm-dns-value" placeholder="origin.example.com / 203.0.113.10" autocomplete="off" spellcheck="false"></div>
                 </div>
                 <div class="hint">${esc(dm('hintDnsServe'))}</div>
+            </div>
+            <div id="dm-upload-fields" hidden>
+                <div class="field"><label>${esc(dm('pickZip'))} *</label>
+                    <input type="file" id="dm-zip" accept=".zip" style="max-width:420px">
+                    <div class="hint">${esc(dm('hintUpload'))}</div>
+                </div>
             </div>
             <div style="display:flex;justify-content:flex-end">
                 <button class="btn" id="dm-submit" style="min-width:140px">${esc(dm('submit'))}</button>
@@ -1300,7 +1313,8 @@ async function viewDomains(v) {
         $('#dm-git-fields').hidden = mode !== 'git';
         $('#dm-redirect-fields').hidden = mode !== 'redirect';
         $('#dm-dns-fields').hidden = mode !== 'dns';
-        $('#dm-mode-hint').textContent = mode === 'git' ? dm('hintGit') : mode === 'redirect' ? dm('hintRedirect') : dm('hintDns');
+        $('#dm-upload-fields').hidden = mode !== 'upload';
+        $('#dm-mode-hint').textContent = mode === 'git' ? dm('hintGit') : mode === 'upload' ? dm('hintUpload') : mode === 'redirect' ? dm('hintRedirect') : dm('hintDns');
     };
     $('#dm-mode').onchange = syncMode;
     syncMode();
@@ -1351,13 +1365,21 @@ async function viewDomains(v) {
             const target = $('#dm-target').value.trim();
             if (!/^https:\/\/[^\s]+$/.test(target)) return toast(dm('errTarget'), 1);
             body.target_url = target;
-        } else {
-            body.dns_type = $('#dm-dns-type').value;
-            const val = $('#dm-dns-value').value.trim();
-            if (!val) return toast(dm('errDnsValue'), 1);
-            body.dns_value = val;
+        } else if (mode === 'upload') {
+            const f = $('#dm-zip').files[0];
+            if (!f) return toast(dm('pickZip'), 1);
+            if (f.size > 5 * 1024 * 1024) return toast(dm('errZipSize'), 1);
         }
         const d = await withTotp(code => {
+            if (mode === 'upload') {
+                const fd = new FormData();
+                fd.append('module_name', body.module_name);
+                fd.append('module_type', body.module_type);
+                fd.append('label', body.label);
+                if (code) fd.append('totp_code', code);
+                fd.append('file', $('#dm-zip').files[0]);
+                return api('/api/domains', { method: 'POST', body: fd });
+            }
             const payload = code ? { ...body, totp_code: code } : body;
             return api('/api/domains', { method: 'POST', body: JSON.stringify(payload) });
         });
@@ -1389,6 +1411,7 @@ async function viewDomains(v) {
                 ${statusBadge(row.status)}
                 <span class="muted" style="font-size:12px">${esc(modeLabel(row.mode))} · ${esc(row.module_name)} (${row.module_type})${staff() && domData.all && row.owner_username ? ' · @' + esc(row.owner_username) : ''}</span>
                 <span style="flex:1"></span>
+                ${row.mode === 'upload' && row.status !== 'disabled' ? `<button class="btn ghost sm" data-dm-reup="${esc(row.label)}">${esc(dm('reupload'))}</button><input type="file" accept=".zip" hidden data-dm-file="${esc(row.label)}">` : ''}
                 ${row.status === 'active' || row.status === 'paused' ? `<button class="btn ghost sm" data-dm-act="pause" data-fqdn="${esc(row.label)}">${esc(row.status === 'active' ? dm('pause') : dm('resume'))}</button>` : ''}
                 ${row.status !== 'disabled' ? `<button class="btn ghost sm danger" data-dm-act="delete" data-fqdn="${esc(row.label)}">${esc(t('del'))}</button>` : ''}
             </div>
@@ -1406,6 +1429,25 @@ async function viewDomains(v) {
     }).join('');
 
     const reload = () => loadView();
+    listEl.querySelectorAll('[data-dm-reup]').forEach(b => b.onclick = () => {
+        const fp = listEl.querySelector('[data-dm-file="' + b.dataset.reup + '"]');
+        if (fp) fp.click();
+    });
+    listEl.querySelectorAll('[data-dm-file]').forEach(inp => inp.onchange = () => busy(inp, async () => {
+        const f = inp.files[0];
+        if (!f) return;
+        if (f.size > 5 * 1024 * 1024) return toast(dm('errZipSize'), 1);
+        const fd = new FormData();
+        fd.append('file', f);
+        const d = await withTotp(code => {
+            if (code) fd.append('totp_code', code);
+            return api('/api/domains/' + inp.dataset.dmFile + '/reupload', { method: 'POST', body: fd });
+        });
+        if (d.cancelled) return;
+        if (d.error) return toast(dmErr(d), 1);
+        toast(t('saved'));
+        reload();
+    }));
     listEl.querySelectorAll('[data-dm-copy]').forEach(b => b.onclick = () => {
         navigator.clipboard.writeText(b.dataset.dmCopy).then(() => toast(t('tkCopied'))).catch(() => {});
     });

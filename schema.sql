@@ -149,6 +149,8 @@ CREATE TABLE IF NOT EXISTS module_domains (
     dns_value     TEXT NOT NULL DEFAULT '',
     dns_record_id TEXT NOT NULL DEFAULT '',      -- Cloudflare DNS record id
     route_id      TEXT NOT NULL DEFAULT '',      -- Cloudflare Workers route id（精确 hostname/* 模式）
+    r2_bucket     TEXT NOT NULL DEFAULT '',      -- upload 模式专属桶（每域一桶）
+    r2_bytes      INTEGER NOT NULL DEFAULT 0,      -- 桶内对象总字节数
     verify_code   TEXT NOT NULL DEFAULT '',
     version       INTEGER NOT NULL DEFAULT 1,    -- 内容缓存版本（+1 即全站失效）
     status        TEXT NOT NULL DEFAULT 'verifying', -- verifying | active | paused | disabled
