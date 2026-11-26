@@ -6,11 +6,10 @@ workers_dev = false
 # 独立于工作台 Worker 的原因：Workers Assets 的边缘缓存按路径共享（忽略主机名），
 # 工作台 Worker 的 ASSETS 绑定会把 workbench 首页缓存泄漏到 plugin-* 主机名的 `/` 上。
 # 本 Worker 无 Assets 绑定，物理上无法触达那套缓存。
-# 托管域名的精确路由（plugin-<label>.erisdev.com/*）由 Workbench 在申请时动态创建并指向本 Worker。
-
-routes = [
-    { pattern = "plugin.erisdev.com/*", zone_name = "erisdev.com" },
-]
+#
+# 路由全部由 Workbench 在运行时经 CF API 管理（引导页 plugin.erisdev.com/* 为一次性手工/API 建，
+# 每域路由 plugin-<label>.erisdev.com/* 在申请时动态创建）。
+# ⚠️ 本文件绝不声明 routes：wrangler deploy 会按配置对账，删掉所有动态创建的路由。
 
 [[d1_databases]]
 binding = "DB"
