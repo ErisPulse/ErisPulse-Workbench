@@ -31,6 +31,7 @@ const MIME_EXT = {
 };
 
 export const isDomainHost = host => DOMAIN_RE.test(host);
+export { MIME_EXT };
 export const isDomainGate = host => host === GATE_HOST;
 
 /** 状态页：与 Workbench 同风格的极简玻璃卡片 */

@@ -3,9 +3,6 @@ main = "src/worker.js"
 compatibility_date = "2026-01-01"
 workers_dev = false   # 只走 workbench.erisdev.com 自定义域，不开 workers.dev 镜像
 
-[vars]
-# R2 上传托管用账户 ID（非机密）
-R2_ACCOUNT_ID = "b0336d40e670defe6129f0ab4df436ed"
 
 # 模块托管域名站点服务与工作台同一 Worker（src/domains.js 按 hostname 分流）；
 # 托管域名的 DNS 记录与精确路由由 Workbench 经 CF API 在申请时动态创建，不在本文件声明
@@ -32,6 +29,8 @@ database_id = "e6a2b9b1-863c-4168-804b-87f8b23f61b0"
 # ── 托管域名（CF Zone ID 走 vars；DNS token 属敏感凭据走 wrangler secret put CF_DNS_TOKEN）──
 # 未配置时「托管域名」功能对用户提示 503 UNCONFIGURED
 # CF_ZONE_ID = ""
+# R2 上传托管用账户 ID（非机密）
+R2_ACCOUNT_ID = "b0336d40e670defe6129f0ab4df436ed"
 # 可选：POST https://<域名>/purge-cache/<fqdn>/<密码> 强制某站点重新拉取分支内容；
 # 未设置时回退读 D1 settings 表 key=purge_password
 # PURGE_PASSWORD = ""
