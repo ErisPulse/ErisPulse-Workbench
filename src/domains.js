@@ -37,7 +37,7 @@ export const isDomainGate = host => host === GATE_HOST;
 /** 状态页：与 Workbench 同风格的极简玻璃卡片 */
 function page(title, body, status = 200) {
     const html = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2214%22 fill=%22%233a94d0%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial,sans-serif%22 font-size=%2236%22 font-weight=%22bold%22 fill=%22%23fff%22 text-anchor=%22middle%22%3EE%3C/text%3E%3C/svg%3E"><title>${title}</title><style>
+    <link rel="icon" href="https://workbench.erisdev.com/logo.png">
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:#f6f7f9;color:#0f1419;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
 .box{background:rgba(255,255,255,.82);backdrop-filter:blur(20px);border:1px solid #e5e8ec;border-radius:20px;box-shadow:0 24px 64px -24px rgba(15,23,42,.3);padding:2.2rem 2.4rem;max-width:420px;text-align:center}
 h1{font-size:1.15rem;margin:0 0 .6rem}p{font-size:.9rem;color:#5f6b7a;margin:.4rem 0;line-height:1.7}b{color:#3a94d0}
