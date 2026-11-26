@@ -2,7 +2,7 @@
 // 架构：Cloudflare Worker（本文件）+ D1 + 静态前端（public/）
 // 完全开源，接受社区监督。
 
-import { isDomainHost, handleDomainRequest } from './domains.js';
+import { isDomainHost, isDomainGate, handleDomainRequest } from './domains.js';
 
 // ── OAuth 上游（作为客户端登录）──
 const OAUTH_UPSTREAM = {
@@ -35,13 +35,14 @@ const OAUTH_TOKEN_TTL_S = 30 * 86400;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 const AVATAR_MAX = 1024 * 1024;
 
-// ── 模块托管域名（<label>.plugin.erisdev.com）──
-const DOMAIN_BASE = 'plugin.erisdev.com';
+// ── 模块托管域名（plugin-<label>.erisdev.com 单层 + 固定前缀；TLS 由 *.erisdev.com 免费通配符覆盖）──
+const DOMAIN_PREFIX = 'plugin-';
+const DOMAIN_BASE = 'erisdev.com';
 const DOMAIN_LABEL_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 const DOMAIN_BRANCH_RE = /^[A-Za-z0-9._\-/]{1,120}$/;
 const DOMAIN_LIMIT_PER_MODULE = 2;
 const DOMAIN_LIMIT_PER_USER = 10;
-// 二级保留名：官方子域与基础设施相关词，永不开放
+// 保留名：前缀已隔离官方子域，此表仅防易混淆命名
 const DOMAIN_RESERVED = new Set(['www', 'api', 'admin', 'mail', 'smtp', 'imap', 'pop', 'ns1', 'ns2',
     'blog', 'docs', 'cdn', 'static', 'assets', 'oauth', 'app', 'dev', 'test', 'demo', 'help',
     'status', 'forum', 'wiki', 'shop', 'store', 'pay', 'vpn', 'git', 'ftp', 'mx', 'erispulse', 'workbench']);
@@ -314,8 +315,8 @@ async function ownerUidOf(db, type, name) {
     } catch (e) { return null; }
 }
 
-// ═══════════ 模块托管域名（<label>.plugin.erisdev.com）═══════════
-const domainFqdn = label => label + '.' + DOMAIN_BASE;
+// ═══════════ 模块托管域名（plugin-<label>.erisdev.com）═══════════
+const domainFqdn = label => DOMAIN_PREFIX + label + '.' + DOMAIN_BASE;
 
 /** 仓库输入归一化：按平台解析 → {host, base, owner, repo}；github/codeberg 的 URL 自动纠正平台，其余按 gitea/gitlab 风格接受任意 https 实例 */
 function parseGitRepo(input, platform) {
@@ -404,6 +405,22 @@ async function cfDnsApi(env, method, body, recordId) {
     if (!resp.ok || !d.success) {
         const msg = d.errors && d.errors[0] ? `${d.errors[0].code} ${d.errors[0].message}` : 'HTTP ' + resp.status;
         throw new Error('Cloudflare API: ' + msg);
+    }
+    return d.result;
+}
+
+/** Worker 路由（token 需 Zone.Workers Routes Edit）：精确 hostname/* 模式，互不影响其他子域 */
+async function cfRouteApi(env, method, body, routeId) {
+    const url = `https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/workers/routes${routeId ? '/' + routeId : ''}`;
+    const resp = await fetch(url, {
+        method,
+        headers: { Authorization: 'Bearer ' + env.CF_DNS_TOKEN, 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+    });
+    const d = await resp.json().catch(() => ({}));
+    if (!resp.ok || !d.success) {
+        const msg = d.errors && d.errors[0] ? `${d.errors[0].code} ${d.errors[0].message}` : 'HTTP ' + resp.status;
+        throw new Error('Cloudflare Route API: ' + msg);
     }
     return d.result;
 }
@@ -532,6 +549,9 @@ async function ensureTables(db) {
     )`).run().catch(() => {});
     await db.prepare('CREATE INDEX IF NOT EXISTS idx_domains_uid ON module_domains(uid)').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN git_base TEXT').run().catch(() => {});
+    await db.prepare('ALTER TABLE module_domains ADD COLUMN route_id TEXT').run().catch(() => {});
+    // 插件域名流量预算表（护栏用，抽样计数）
+    await db.prepare('CREATE TABLE IF NOT EXISTS domain_quota (day TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)').run().catch(() => {});
 }
 
 // raw.githubusercontent 的 CDN 会缓存旧内容：查询串变化即视为不同资源，用于拿到刚提交后的快照
@@ -760,8 +780,9 @@ export default {
         const method = request.method;
         const db = env.DB;
 
-        // ── 模块托管域名站点服务（*.plugin.erisdev.com，逻辑在 domains.js）──
-        if (isDomainHost(url.hostname.toLowerCase())) {
+        // ── 模块托管域名站点服务（plugin-*.erisdev.com 与引导页，逻辑在 domains.js）──
+        const h = url.hostname.toLowerCase();
+        if (isDomainHost(h) || isDomainGate(h)) {
             return handleDomainRequest(request, env, ctx);
         }
 
@@ -1413,8 +1434,8 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 let status = 'active';
                 let verifyFile = '';
                 const vals = {
-                    git_repo: '', git_host: '', git_branch: '', target_url: '',
-                    dns_type: '', dns_value: '', dns_record_id: '', verify_code: verifyCode,
+                    git_repo: '', git_host: '', git_base: '', git_branch: '', target_url: '',
+                    dns_type: '', dns_value: '', dns_record_id: '', route_id: '', verify_code: verifyCode,
                 };
 
                 if (mode === 'git') {
@@ -1443,21 +1464,32 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     vals.dns_value = String(b.dns_value).trim().toLowerCase();
                     status = 'verifying';
                     verifyFile = '.well-known/erisdev-verify.txt';
-                    // proxied 记录：隐藏源站 IP，防护与证书由 Cloudflare 承担，可即时下线
-                    try {
-                        const rec = await cfDnsApi(env, 'POST', {
-                            type: dnsType, name: fqdn, content: vals.dns_value, proxied: true, ttl: 1,
-                            comment: 'ErisPulse module domain: ' + b.module_name,
-                        });
-                        vals.dns_record_id = rec.id;
-                    } catch (e) {
-                        return fail('UPSTREAM', 502, String(e.message || e).slice(0, 200));
-                    }
                 }
 
-                await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, verify_code, version, status, created_at, updated_at)
-                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,1,?15,?16,?16)`)
-                    .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.verify_code, status, now()).run();
+                // DNS 记录 + 精确路由：git/redirect 用占位 AAAA 100::，dns 模式指向用户目标；均橙云代理
+                //（单层子域 TLS 由 *.erisdev.com 免费通配符覆盖；精确路由互不影响其他子域）
+                try {
+                    const rec = await cfDnsApi(env, 'POST', {
+                        type: mode === 'dns' ? vals.dns_type : 'AAAA',
+                        name: fqdn,
+                        content: mode === 'dns' ? vals.dns_value : '100::',
+                        proxied: true, ttl: 1,
+                        comment: 'ErisPulse module domain: ' + b.module_name,
+                    });
+                    vals.dns_record_id = rec.id;
+                    const route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-workbench' });
+                    vals.route_id = route.id;
+                } catch (e) {
+                    // 半创建回滚：已建 DNS 记录时撤掉，避免悬空
+                    if (vals.dns_record_id) {
+                        try { await cfDnsApi(env, 'DELETE', null, vals.dns_record_id); } catch (e2) { /* 尽力回滚 */ }
+                    }
+                    return fail('UPSTREAM', 502, String(e.message || e).slice(0, 200));
+                }
+
+                await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, route_id, verify_code, version, status, created_at, updated_at)
+                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,1,?16,?17,?17)`)
+                    .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.route_id, vals.verify_code, status, now()).run();
                 await audit(db, me.uid, 'domain.apply', fqdn, mode);
                 if (status === 'active') {
                     notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
@@ -1518,8 +1550,10 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     if (row.status !== 'paused') return fail('VALIDATION', 400, 'only paused domains can be resumed');
                     await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
                 } else if (action === 'delete') {
-                    if (row.dns_record_id && env.CF_DNS_TOKEN) {
-                        try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 记录已不存在时忽略 */ }
+                    // 撤路由 + 撤记录，均已不存在时忽略
+                    if (env.CF_DNS_TOKEN) {
+                        if (row.route_id) { try { await cfRouteApi(env, 'DELETE', null, row.route_id); } catch (e) { /* 忽略 */ } }
+                        if (row.dns_record_id) { try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ } }
                     }
                     await db.prepare('DELETE FROM module_domains WHERE fqdn = ?1').bind(row.fqdn).run();
                 } else if (action === 'update') {

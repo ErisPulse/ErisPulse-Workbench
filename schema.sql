@@ -148,6 +148,7 @@ CREATE TABLE IF NOT EXISTS module_domains (
     dns_type      TEXT NOT NULL DEFAULT '',      -- CNAME | A | AAAA
     dns_value     TEXT NOT NULL DEFAULT '',
     dns_record_id TEXT NOT NULL DEFAULT '',      -- Cloudflare DNS record id
+    route_id      TEXT NOT NULL DEFAULT '',      -- Cloudflare Workers route id（精确 hostname/* 模式）
     verify_code   TEXT NOT NULL DEFAULT '',
     version       INTEGER NOT NULL DEFAULT 1,    -- 内容缓存版本（+1 即全站失效）
     status        TEXT NOT NULL DEFAULT 'verifying', -- verifying | active | paused | disabled

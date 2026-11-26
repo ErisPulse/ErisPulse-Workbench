@@ -61,13 +61,13 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
         submitting: '提交中…', saving: '保存中…', unsaved: '有未提交的修改，离开将丢失。确定离开？', filled: '已自动填充', curLogo: '当前生效图标：',
         confirm: '确定', docsLoading: '加载文档…', docsMissing: '文档不存在', docsDesc: '按板块查阅：接入、令牌、模块、认领与常见问题。',
         dm: {
-            desc: '为已发布的模块申请免费托管域名：<前缀>.plugin.erisdev.com',
+            desc: '为已发布的模块申请免费托管域名：plugin-<前缀>.erisdev.com',
             apply: '申请新域名', mode: '接入方式',
             modeGit: '仓库分支（推荐）', hintGit: '指定 git 仓库与分支，分支内容直接作为站点展示，支持 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
             modeRedirect: '重定向', hintRedirect: '访问时 301 跳转到你填写的 https 地址',
             modeDns: '自有服务器（高级）', hintDns: '把域名解析到你自己的服务器（CNAME / A / AAAA）',
             module: '选择模块', mineOnly: '仅限你拥有的已收录模块',
-            label: '域名前缀', labelAvail: (f) => `${f}.plugin.erisdev.com 可用`,
+            label: '域名前缀', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '仓库平台', hintSelfHost: '自建实例需公网可经 HTTPS 访问；GitHub/Codeberg 会自动识别',
             submit: '提交申请', list: '我的域名', empty: '还没有托管域名',
             stVerifying: '待验证', stActive: '生效中', stPaused: '已暂停', stDisabled: '已停用',
@@ -142,13 +142,13 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
         submitting: '提交中…', saving: '儲存中…', unsaved: '有未提交的修改，離開將遺失。確定離開？', filled: '已自動填充', curLogo: '目前生效圖示：',
         confirm: '確定', docsLoading: '載入文件…', docsMissing: '文件不存在', docsDesc: '依板塊查閱：接入、權杖、模組、認領與常見問題。',
         dm: {
-            desc: '為已發布的模組申請免費託管網域：<前綴>.plugin.erisdev.com',
+            desc: '為已發布的模組申請免費託管網域：plugin-<前綴>.erisdev.com',
             apply: '申請新網域', mode: '接入方式',
             modeGit: '儲存庫分支（推薦）', hintGit: '指定 git 儲存庫與分支，分支內容直接作為站點展示，支援 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
             modeRedirect: '重新導向', hintRedirect: '存取時 301 轉址到你填寫的 https 位址',
             modeDns: '自有伺服器（進階）', hintDns: '把網域解析到你自己的伺服器（CNAME / A / AAAA）',
             module: '選擇模組', mineOnly: '僅限你擁有的已收錄模組',
-            label: '網域前綴', labelAvail: (f) => `${f}.plugin.erisdev.com 可用`,
+            label: '網域前綴', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '儲存庫平台', hintSelfHost: '自建實例需公網可經 HTTPS 存取；GitHub/Codeberg 會自動識別',
             submit: '提交申請', list: '我的網域', empty: '還沒有託管網域',
             stVerifying: '待驗證', stActive: '生效中', stPaused: '已暫停', stDisabled: '已停用',
@@ -223,13 +223,13 @@ fTotpHint: 'This account has 2FA enabled; actions require an authenticator code'
         submitting: 'Submitting…', saving: 'Saving…', unsaved: 'You have unsaved changes. Leave anyway?', filled: 'Auto-filled', curLogo: 'Current logo:',
 confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', docsDesc: 'Browse by topic: integration, tokens, modules, claims and FAQ.',
         dm: {
-            desc: 'Request a free hosted domain for your published module: <label>.plugin.erisdev.com',
+            desc: 'Request a free hosted domain for your published module: plugin-<label>.erisdev.com',
             apply: 'New Domain', mode: 'Integration Mode',
             modeGit: 'Repo Branch (Recommended)', hintGit: 'Serve a git repo branch directly as the site — GitHub, Codeberg, self-hosted Gitea/Forgejo and GitLab supported',
             modeRedirect: 'Redirect', hintRedirect: '301-redirect visitors to an https URL you provide',
             modeDns: 'Own Server (Advanced)', hintDns: 'Point the domain at your own server (CNAME / A / AAAA)',
             module: 'Select Module', mineOnly: 'Only your registered modules',
-            label: 'Domain Label', labelAvail: (f) => `${f}.plugin.erisdev.com is available`,
+            label: 'Domain Label', labelAvail: (f) => `plugin-${f}.erisdev.com is available`,
             platform: 'Repository Platform', hintSelfHost: 'Self-hosted instances must be publicly reachable over HTTPS; GitHub/Codeberg URLs are auto-detected',
             submit: 'Submit Request', list: 'My Domains', empty: 'No hosted domains yet',
             stVerifying: 'Verifying', stActive: 'Active', stPaused: 'Paused', stDisabled: 'Disabled',
@@ -304,13 +304,13 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
         submitting: '送信中…', saving: '保存中…', unsaved: '未送信の変更があります。破棄して移動しますか？', filled: '自動入力しました', curLogo: '現在のロゴ：',
         confirm: '確定', docsLoading: 'ドキュメントを読み込み中…', docsMissing: 'ドキュメントが見つかりません', docsDesc: 'トピック別：連携・トークン・モジュール・申請・FAQ。',
         dm: {
-            desc: '公開済みモジュールに無料のホストドメインを申請：<プレフィックス>.plugin.erisdev.com',
+            desc: '公開済みモジュールに無料のホストドメインを申請：plugin-<プレフィックス>.erisdev.com',
             apply: '新規ドメイン申請', mode: '接続方式',
             modeGit: 'リポジトリ分支（推奨）', hintGit: 'git リポジトリのブランチ内容をそのままサイトとして表示。GitHub / Codeberg / 自前 Gitea・Forgejo / GitLab に対応',
             modeRedirect: 'リダイレクト', hintRedirect: 'アクセス時に入力した https アドレスへ 301 転送',
             modeDns: '自前サーバー（上級）', hintDns: 'ドメインを自分のサーバーへ解決（CNAME / A / AAAA）',
             module: 'モジュールを選択', mineOnly: '自分が所有する登録済みモジュールのみ',
-            label: 'ドメインプレフィックス', labelAvail: (f) => `${f}.plugin.erisdev.com は利用可能`,
+            label: 'ドメインプレフィックス', labelAvail: (f) => `plugin-${f}.erisdev.com は利用可能`,
             platform: 'リポジトリプラットフォーム', hintSelfHost: '自前インスタンスは HTTPS で公開到達可能である必要があります。GitHub/Codeberg は自動判別',
             submit: '申請を送信', list: 'マイドメイン', empty: 'ホストドメインはまだありません',
             stVerifying: '検証中', stActive: '有効', stPaused: '一時停止', stDisabled: '停止中',
@@ -385,13 +385,13 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
         submitting: 'Отправка…', saving: 'Сохранение…', unsaved: 'Есть несохранённые изменения. Уйти?', filled: 'Заполнено автоматически', curLogo: 'Текущий логотип:',
         confirm: 'ОК', docsLoading: 'Загрузка документации…', docsMissing: 'Документ не найден', docsDesc: 'По разделам: интеграция, токены, модули, заявки, вопросы.',
         dm: {
-            desc: 'Бесплатный домен для опубликованного модуля: <метка>.plugin.erisdev.com',
+            desc: 'Бесплатный домен для опубликованного модуля: plugin-<метка>.erisdev.com',
             apply: 'Новый домен', mode: 'Способ подключения',
             modeGit: 'Ветка репозитория (рекомендуется)', hintGit: 'Содержимое ветки git-репозитория публикуется как сайт — GitHub, Codeberg, свои Gitea/Forgejo и GitLab',
             modeRedirect: 'Перенаправление', hintRedirect: '301-редирект на указанный https-адрес',
             modeDns: 'Свой сервер (расширенный)', hintDns: 'Направить домен на свой сервер (CNAME / A / AAAA)',
             module: 'Выберите модуль', mineOnly: 'Только ваши зарегистрированные модули',
-            label: 'Метка домена', labelAvail: (f) => `${f}.plugin.erisdev.com доступен`,
+            label: 'Метка домена', labelAvail: (f) => `plugin-${f}.erisdev.com доступен`,
             platform: 'Платформа репозитория', hintSelfHost: 'Собственные инстансы должны быть доступны по HTTPS из интернета; GitHub/Codeberg распознаются автоматически',
             submit: 'Отправить заявку', list: 'Мои домены', empty: 'Доменов пока нет',
             stVerifying: 'Ожидает проверки', stActive: 'Активен', stPaused: 'Приостановлен', stDisabled: 'Отключён',
@@ -1199,7 +1199,7 @@ function renderModRows(v) {
     });
 }
 
-// ═══ 托管域名（<label>.plugin.erisdev.com：git 分支 / 重定向 / 自有服务器）═══
+// ═══ 托管域名（plugin-<label>.erisdev.com：git 分支 / 重定向 / 自有服务器）═══
 async function viewDomains(v) {
     const dm = k => t('dm.' + k);
     v.innerHTML = `<div class="page-title">${esc(t('nav.domains'))}</div><div class="page-desc">${esc(dm('desc'))}</div>
@@ -1214,9 +1214,10 @@ async function viewDomains(v) {
                 </select><div class="hint" id="dm-mode-hint"></div></div>
             </div>
             <div class="field"><label>${esc(dm('label'))} *</label>
-                <div style="display:flex;gap:10px;align-items:baseline">
-                    <input id="dm-label" placeholder="mybot" style="max-width:240px" autocomplete="off" spellcheck="false">
-                    <span class="muted" style="font-size:12px">.plugin.erisdev.com</span>
+                <div style="display:flex;gap:6px;align-items:baseline">
+                    <input id="dm-label" placeholder="mybot" style="max-width:220px" autocomplete="off" spellcheck="false">
+                    <span class="mono muted" style="font-size:13px;flex:none">plugin-</span>
+                    <span class="muted" style="font-size:12px">.erisdev.com</span>
                 </div>
                 <div class="hint" id="dm-label-hint"></div>
             </div>

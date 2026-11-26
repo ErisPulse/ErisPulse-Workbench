@@ -1,11 +1,19 @@
-// 模块托管域名站点服务（<label>.plugin.erisdev.com）
+// 模块托管域名站点服务（plugin-<label>.erisdev.com，单层 + 固定前缀）
 // 注册表即共享 D1 的 module_domains 表；与主 Worker 同一入口部署，按 hostname 分流。
 //   git      → 拉取 GitHub/Codeberg/自建 Gitea·Forgejo/GitLab 分支文件，按扩展名给 MIME，版本化边缘缓存
 //   redirect → 301 到登记的 https 目标
 //   dns      → fetch(request) 原样回源（CNAME/A/AAAA 记录由 Workbench 经 CF API 代建）
-// 未注册的子域名落引导页；disabled/paused/verifying 各有状态页。
+// TLS 由 *.erisdev.com 免费通配符覆盖；每个域名经精确 Worker 路由接入，不影响其他子域。
+// 未注册的主机不会解析（无 DNS 记录）；plugin.erisdev.com 作为固定引导页主机。
 
-const DOMAIN_SUFFIX = '.plugin.erisdev.com';
+const DOMAIN_BASE = 'erisdev.com';
+const DOMAIN_PREFIX = 'plugin-';
+const DOMAIN_RE = new RegExp('^' + DOMAIN_PREFIX + '([a-z0-9]([a-z0-9-]{0,61}[a-z0-9]))\\.' + DOMAIN_BASE.replace(/\./g, '\\.') + '$');
+const GATE_HOST = DOMAIN_PREFIX.slice(0, -1) + '.' + DOMAIN_BASE;   // plugin.erisdev.com → 引导页
+// 免费额度护栏：免费版 Workers 10 万次/天为账号级共享额度，插件域名流量单独设日预算，
+// 超限只降级插件域名站点页，保证工作台主服务不被挤占。抽样 2% 计数（×50 估算）
+const DOMAIN_DAILY_BUDGET = 50000;
+const QUOTA_SAMPLE_RATE = 0.02;
 const CACHE_TTL_S = 600;   // 本地缓存：分支内容更新/清理后最长 10 分钟
 const RAW_TTL_S = 60;      // raw 上游边缘缓存：兜底上游抖动
 const PATH_MAX = 512;
@@ -22,7 +30,8 @@ const MIME_EXT = {
     woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf', eot: 'application/vnd.ms-fontobject',
 };
 
-export const isDomainHost = host => host === DOMAIN_SUFFIX.slice(1) || host.endsWith(DOMAIN_SUFFIX);
+export const isDomainHost = host => DOMAIN_RE.test(host);
+export const isDomainGate = host => host === GATE_HOST;
 
 /** 状态页：与 Workbench 同风格的极简玻璃卡片 */
 function page(title, body, status = 200) {
@@ -69,6 +78,20 @@ export async function handleDomainRequest(request, env, ctx) {
     const url = new URL(request.url);
     const host = url.hostname.toLowerCase();
 
+    // ── 免费额度护栏：抽样计数 + 预算检查（统计失败不拦正常流量）──
+    if (isDomainHost(host)) {
+        try {
+            const day = new Date().toISOString().slice(0, 10);
+            if (Math.random() < QUOTA_SAMPLE_RATE) {
+                await env.DB.prepare('INSERT INTO domain_quota (day, n) VALUES (?1, 50) ON CONFLICT(day) DO UPDATE SET n = n + 50').bind(day).run();
+            }
+            const q = await env.DB.prepare('SELECT n FROM domain_quota WHERE day = ?1').bind(day).first();
+            if (q && q.n > DOMAIN_DAILY_BUDGET) {
+                return page('站点服务暂时不可用 · Temporarily unavailable', '<p>今日免费请求额度已达预算上限，站点服务已临时降级以保护主服务。</p><p>Daily free-tier request budget reached; site serving is temporarily throttled to protect the main service. Please try again tomorrow (UTC).</p>', 429);
+            }
+        } catch (e) { /* 护栏统计失败不拦流量 */ }
+    }
+
     // ── 缓存清理：版本 +1，旧缓存条目自然淘汰 ──
     const pm = url.pathname.match(/^\/purge-cache\/([a-z0-9.-]+)\/([\w-]+)$/);
     if (pm && request.method === 'POST') {
@@ -81,9 +104,9 @@ export async function handleDomainRequest(request, env, ctx) {
         return new Response('ok');
     }
 
-    // ── 非托管子域（含 plugin.erisdev.com 本身）→ 引导页 ──
+    // ── 非托管主机（含 plugin.erisdev.com 引导页主机）→ 引导页 ──
     if (!isDomainHost(host)) {
-        return page('ErisPulse 模块托管域名 · Hosted Domains', `<p>这里为生态模块提供免费子域名托管，形如 <code>模块名.plugin.erisdev.com</code>。</p><p>Free subdomains for ecosystem modules — sign in at <a href="https://workbench.erisdev.com/">workbench.erisdev.com</a> → 「托管域名 / Hosted Domains」 to claim one for your module.</p>`);
+        return page('ErisPulse 模块托管域名 · Hosted Domains', `<p>这里为生态模块提供免费子域名托管，形如 <code>plugin-模块名.erisdev.com</code>。</p><p>Free subdomains for ecosystem modules — sign in at <a href="https://workbench.erisdev.com/">workbench.erisdev.com</a> → 「托管域名 / Hosted Domains」 to claim one for your module.</p>`);
     }
 
     // ── 查注册表 ──

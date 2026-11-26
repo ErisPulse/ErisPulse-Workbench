@@ -1,6 +1,6 @@
 # Hosted Domains
 
-Request a free subdomain for your published module: `<label>.plugin.erisdev.com`. DNS is managed by the Workbench — no manual DNS work needed.
+Request a free subdomain for your published module: `plugin-<label>.erisdev.com`. DNS is managed by the Workbench — no manual DNS work needed.
 
 ## Limits
 
