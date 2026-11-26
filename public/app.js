@@ -1264,7 +1264,8 @@ async function viewDomains(v) {
         api('/api/modules').catch(() => ({})),
     ]);
     const domains = domData.domains || [];
-    if (domData.limits) $('#dm-limits').textContent = dm('limits')(domData.limits.per_module, domData.limits.per_user);
+    const limEl = $('#dm-limits');
+    if (domData.limits && limEl) limEl.textContent = dm('limits')(domData.limits.per_module, domData.limits.per_user);
     const myMods = (modData.modules || []).filter(x => x.mine);
     const sel = $('#dm-module');
     sel.innerHTML = myMods.length

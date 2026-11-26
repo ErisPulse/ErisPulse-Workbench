@@ -409,6 +409,15 @@ async function cfDnsApi(env, method, body, recordId) {
     return d.result;
 }
 
+/** 按名称查 DNS 记录（半创建残留收编用） */
+async function cfFindDnsRecord(env, name) {
+    const url = `https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/dns_records?name=${encodeURIComponent(name)}&per_page=5`;
+    const resp = await fetch(url, { headers: { Authorization: 'Bearer ' + env.CF_DNS_TOKEN } });
+    const d = await resp.json().catch(() => ({}));
+    if (!resp.ok || !d.success) throw new Error('Cloudflare API: HTTP ' + resp.status);
+    return (d.result || []).find(x => x.name === name) || null;
+}
+
 /** Worker 路由（token 需 Zone.Workers Routes Edit）：精确 hostname/* 模式，互不影响其他子域 */
 async function cfRouteApi(env, method, body, routeId) {
     const url = `https://api.cloudflare.com/client/v4/zones/${env.CF_ZONE_ID}/workers/routes${routeId ? '/' + routeId : ''}`;
@@ -1469,22 +1478,38 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 // DNS 记录 + 精确路由：git/redirect 用占位 AAAA 100:: 并接 Worker 路由（流量过 Worker）；
                 // dns 模式不建路由——流量经 CF 边缘直达用户源站，零 Worker 请求
                 //（单层子域 TLS 由 *.erisdev.com 免费通配符覆盖；精确路由互不影响其他子域）
+                // 幂等：同名记录/路由已存在（上次半创建残留）时收编复用，不报错
                 try {
-                    const rec = await cfDnsApi(env, 'POST', {
-                        type: mode === 'dns' ? vals.dns_type : 'AAAA',
-                        name: fqdn,
-                        content: mode === 'dns' ? vals.dns_value : '100::',
-                        proxied: true, ttl: 1,
-                        comment: 'ErisPulse module domain: ' + b.module_name,
-                    });
+                    let rec;
+                    try {
+                        rec = await cfDnsApi(env, 'POST', {
+                            type: mode === 'dns' ? vals.dns_type : 'AAAA',
+                            name: fqdn,
+                            content: mode === 'dns' ? vals.dns_value : '100::',
+                            proxied: true, ttl: 1,
+                            comment: 'ErisPulse module domain: ' + b.module_name,
+                        });
+                    } catch (e) {
+                        if (!/81058/.test(String(e.message || e))) throw e;
+                        rec = await cfFindDnsRecord(env, fqdn);
+                        if (!rec) throw e;
+                    }
                     vals.dns_record_id = rec.id;
                     if (mode !== 'dns') {
-                        const route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-workbench' });
+                        let route;
+                        try {
+                            route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-workbench' });
+                        } catch (e) {
+                            if (!/already exists/i.test(String(e.message || e))) throw e;
+                            const list = await cfRouteApi(env, 'GET');
+                            route = (list || []).find(x => x.pattern === fqdn + '/*');
+                            if (!route) throw e;
+                        }
                         vals.route_id = route.id;
                     }
                 } catch (e) {
-                    // 半创建回滚：已建 DNS 记录时撤掉，避免悬空
-                    if (vals.dns_record_id) {
+                    // 全新创建失败才回滚；收编成功的不动
+                    if (!vals.route_id && !/already exists/i.test(String(e.message || e)) && vals.dns_record_id) {
                         try { await cfDnsApi(env, 'DELETE', null, vals.dns_record_id); } catch (e2) { /* 尽力回滚 */ }
                     }
                     return fail('UPSTREAM', 502, String(e.message || e).slice(0, 200));
