@@ -1,6 +1,7 @@
 name = "erispulse-workbench"
 main = "src/worker.js"
 compatibility_date = "2026-01-01"
+workers_dev = false   # 只走 workbench.erisdev.com 自定义域，不开 workers.dev 镜像
 
 # 模块托管域名站点服务与工作台同一 Worker（src/domains.js 按 hostname 分流）；
 # 托管域名的 DNS 记录与精确路由由 Workbench 经 CF API 在申请时动态创建，不在本文件声明

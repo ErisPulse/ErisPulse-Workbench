@@ -1466,7 +1466,8 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     verifyFile = '.well-known/erisdev-verify.txt';
                 }
 
-                // DNS 记录 + 精确路由：git/redirect 用占位 AAAA 100::，dns 模式指向用户目标；均橙云代理
+                // DNS 记录 + 精确路由：git/redirect 用占位 AAAA 100:: 并接 Worker 路由（流量过 Worker）；
+                // dns 模式不建路由——流量经 CF 边缘直达用户源站，零 Worker 请求
                 //（单层子域 TLS 由 *.erisdev.com 免费通配符覆盖；精确路由互不影响其他子域）
                 try {
                     const rec = await cfDnsApi(env, 'POST', {
@@ -1477,8 +1478,10 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         comment: 'ErisPulse module domain: ' + b.module_name,
                     });
                     vals.dns_record_id = rec.id;
-                    const route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-workbench' });
-                    vals.route_id = route.id;
+                    if (mode !== 'dns') {
+                        const route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-workbench' });
+                        vals.route_id = route.id;
+                    }
                 } catch (e) {
                     // 半创建回滚：已建 DNS 记录时撤掉，避免悬空
                     if (vals.dns_record_id) {
@@ -1545,9 +1548,23 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
 
                 if (action === 'pause') {
                     if (row.status !== 'active') return fail('VALIDATION', 400, 'only active domains can be paused');
+                    // dns 模式无 Worker 路由：暂停 = 摘除 DNS 记录（resume 时按存档重建）
+                    if (row.mode === 'dns' && row.dns_record_id && env.CF_DNS_TOKEN) {
+                        try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ }
+                        await db.prepare('UPDATE module_domains SET dns_record_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run();
+                    }
                     await db.prepare("UPDATE module_domains SET status = 'paused', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
                 } else if (action === 'resume') {
                     if (row.status !== 'paused') return fail('VALIDATION', 400, 'only paused domains can be resumed');
+                    // dns 模式恢复：重建 DNS 记录
+                    if (row.mode === 'dns' && env.CF_DNS_TOKEN) {
+                        const rec = await cfDnsApi(env, 'POST', {
+                            type: row.dns_type, name: row.fqdn, content: row.dns_value, proxied: true, ttl: 1,
+                            comment: 'ErisPulse module domain: ' + row.module_name,
+                        }).catch(() => null);
+                        if (!rec) return fail('UPSTREAM', 502, 'failed to recreate the DNS record');
+                        await db.prepare('UPDATE module_domains SET dns_record_id = ?1 WHERE fqdn = ?2').bind(rec.id, row.fqdn).run();
+                    }
                     await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
                 } else if (action === 'delete') {
                     // 撤路由 + 撤记录，均已不存在时忽略
