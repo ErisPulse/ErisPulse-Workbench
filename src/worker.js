@@ -55,6 +55,8 @@ function json(data, status = 200, extra = {}) {
     });
 }
 const fail = (code, status, message) => json({ error: code, message: message || '' }, status);
+// 域名端点专用：附机读 reason 键（API 层 i18n 键），message 恒为英文；前端按 reason 查字典翻译
+const freason = (code, status, reason, message) => json({ error: code, reason: reason || '', message: message || '' }, status);
 const now = () => new Date().toISOString();
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -356,11 +358,10 @@ function gitRawUrl(host, base, owner, repo, branch, path, bust) {
 
 /** label 校验：非法 / 保留 / 已占用分别返回提示文案（API 层英文），通过返回 '' */
 async function checkDomainLabel(db, label) {
-    if (!DOMAIN_LABEL_RE.test(label)) return 'label must be 2-63 lowercase letters, digits or inner hyphens';
-    if (label.length < 2) return 'label must be at least 2 characters';
-    if (DOMAIN_RESERVED.has(label)) return 'this label is reserved';
-    if (await db.prepare('SELECT 1 FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(label)).first()) return 'this label is already taken';
-    return '';
+    if (!DOMAIN_LABEL_RE.test(label) || label.length < 2) return ['label_invalid', 'label must be 2-63 lowercase letters, digits or inner hyphens'];
+    if (DOMAIN_RESERVED.has(label)) return ['label_reserved', 'this label is reserved'];
+    if (await db.prepare('SELECT 1 FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(label)).first()) return ['label_taken', 'this label is already taken'];
+    return null;
 }
 
 const IPV4_RE = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
@@ -1337,8 +1338,13 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 let dma = path.match(/^\/api\/admin\/domains\/([a-z0-9-]{1,63})\/(disable|enable)$/);
                 if (dma && method === 'POST') {
                     const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(dma[1])).first();
-                    if (!row) return fail('NOT_FOUND', 404, 'domain not found');
+                    if (!row) return freason('NOT_FOUND', 404, 'domain_missing', 'domain not found');
                     const newStatus = dma[2] === 'disable' ? 'disabled' : 'paused';
+                    // dns 模式停用时同步摘除 DNS 记录（无路由可拦，记录在即源站可达）
+                    if (dma[2] === 'disable' && row.mode === 'dns' && row.dns_record_id && env.CF_DNS_TOKEN) {
+                        try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ }
+                        await db.prepare('UPDATE module_domains SET dns_record_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run();
+                    }
                     await db.prepare('UPDATE module_domains SET status = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newStatus, now(), row.fqdn).run();
                     await audit(db, me.uid, 'domain.' + dma[2], row.fqdn, row.uid);
                     if (dma[2] === 'disable') {
@@ -1395,9 +1401,9 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
             // 可用性即时查询（前端输入框防抖调用）
             if (path === '/api/domains/check' && method === 'GET') {
                 const label = String(url.searchParams.get('label') || '').trim().toLowerCase();
-                if (!label) return json({ label, available: false, reason: '' });
+                if (!label) return json({ label, available: false, reason: '', message: '' });
                 const err = await checkDomainLabel(db, label);
-                return json({ label, fqdn: domainFqdn(label), available: !err, reason: err });
+                return json({ label, fqdn: domainFqdn(label), available: !err, reason: err ? err[0] : '', message: err ? err[1] : '' });
             }
 
             // 我的域名列表；staff 可 ?all=1 查全部（滥用处置前先看全局）
@@ -1418,25 +1424,25 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 if (totpErr) return totpErr;
                 if (!env.CF_DNS_TOKEN || !env.CF_ZONE_ID) return fail('UNCONFIGURED', 503, 'hosted domains not configured (CF_DNS_TOKEN / CF_ZONE_ID missing)');
                 const mode = String(b.mode || 'git');
-                if (!['git', 'redirect', 'dns'].includes(mode)) return fail('VALIDATION', 400, 'mode must be git, redirect or dns');
-                if (!b.module_name || !['module', 'adapter'].includes(b.module_type)) return fail('VALIDATION', 400, 'missing module_name or module_type');
+                if (!['git', 'redirect', 'dns'].includes(mode)) return freason('VALIDATION', 400, 'bad_mode', 'mode must be git, redirect or dns');
+                if (!b.module_name || !['module', 'adapter'].includes(b.module_type)) return freason('VALIDATION', 400, 'module_missing', 'missing module_name or module_type');
                 const label = String(b.label || '').trim().toLowerCase();
                 const labelErr = await checkDomainLabel(db, label);
-                if (labelErr) return fail('VALIDATION', 400, labelErr);
+                if (labelErr) return freason('VALIDATION', 400, labelErr[0], labelErr[1]);
 
                 // 模块存在 + 所有权（与模块管理同一所有权模型）
                 const cached = await getCachedPackages(db);
                 if (!cached.packages) return fail('UPSTREAM', 502, cached.reason || 'failed to fetch packages.json');
                 const info = containerOf(cached.packages, b.module_type)[b.module_name];
-                if (!info) return fail('NOT_FOUND', 404, 'module not found');
+                if (!info) return freason('NOT_FOUND', 404, 'module_missing', 'module not found');
                 if (!isStaff(me)) {
                     const uids = await myUids();
-                    if (!uids.has(info.submitted_by_uid || '')) return fail('FORBIDDEN', 403, 'only the module owner can request a hosted domain');
+                    if (!uids.has(info.submitted_by_uid || '')) return freason('FORBIDDEN', 403, 'not_owner', 'only the module owner can request a hosted domain');
                 }
                 const modCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE module_name = ?1 AND module_type = ?2').bind(b.module_name, b.module_type).first()).n;
-                if (modCnt >= DOMAIN_LIMIT_PER_MODULE) return fail('LIMIT', 429, 'module domain limit reached (' + DOMAIN_LIMIT_PER_MODULE + ')');
+                if (modCnt >= DOMAIN_LIMIT_PER_MODULE) return freason('LIMIT', 429, 'limit_module', 'module domain limit reached (' + DOMAIN_LIMIT_PER_MODULE + ')');
                 const userCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE uid = ?1').bind(me.uid).first()).n;
-                if (userCnt >= DOMAIN_LIMIT_PER_USER) return fail('LIMIT', 429, 'account domain limit reached (' + DOMAIN_LIMIT_PER_USER + ')');
+                if (userCnt >= DOMAIN_LIMIT_PER_USER) return freason('LIMIT', 429, 'limit_user', 'account domain limit reached (' + DOMAIN_LIMIT_PER_USER + ')');
 
                 const fqdn = domainFqdn(label);
                 const verifyCode = randomHex(8);
@@ -1449,9 +1455,9 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
 
                 if (mode === 'git') {
                     const g = parseGitRepo(b.repo, String(b.platform || '').toLowerCase());
-                    if (!g) return fail('VALIDATION', 400, 'repo must be a full https URL of the selected platform');
+                    if (!g) return freason('VALIDATION', 400, 'bad_repo', 'repo must be a full https URL of the selected platform');
                     const branch = String(b.branch || '').trim();
-                    if (!DOMAIN_BRANCH_RE.test(branch) || branch.startsWith('/') || branch.endsWith('/')) return fail('VALIDATION', 400, 'invalid branch name');
+                    if (!DOMAIN_BRANCH_RE.test(branch) || branch.startsWith('/') || branch.endsWith('/')) return freason('VALIDATION', 400, 'bad_branch', 'invalid branch name');
                     vals.git_repo = g.owner + '/' + g.repo;
                     vals.git_host = g.host;
                     vals.git_base = g.base;
@@ -1463,7 +1469,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     }
                 } else if (mode === 'redirect') {
                     const t = String(b.target_url || '').trim();
-                    if (!/^https:\/\/[^\s]{1,500}$/.test(t)) return fail('VALIDATION', 400, 'target_url must be an https:// URL');
+                    if (!/^https:\/\/[^\s]{1,500}$/.test(t)) return freason('VALIDATION', 400, 'bad_target', 'target_url must be an https:// URL');
                     vals.target_url = t;
                 } else {
                     const dnsType = String(b.dns_type || '').toUpperCase();
@@ -1495,7 +1501,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         if (!rec) throw e;
                     }
                     vals.dns_record_id = rec.id;
-                    if (mode !== 'dns') {
+                    {
                         let route;
                         try {
                             route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-workbench' });
@@ -1539,11 +1545,11 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
             let dm = path.match(/^\/api\/domains\/([a-z0-9-]{1,63})\/verify$/);
             if (dm && method === 'POST') {
                 const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(dm[1])).first();
-                if (!row) return fail('NOT_FOUND', 404, 'domain not found');
-                if (row.uid !== me.uid && !isStaff(me)) return fail('FORBIDDEN', 403, 'only the owner can manage this domain');
-                if (row.status === 'active') return fail('VALIDATION', 400, 'domain is already active');
-                if (row.status === 'disabled') return fail('FORBIDDEN', 403, 'this domain has been disabled by an admin');
-                if (row.mode === 'redirect') return fail('VALIDATION', 400, 'redirect domains do not need verification');
+                if (!row) return freason('NOT_FOUND', 404, 'domain_missing', 'domain not found');
+                if (row.uid !== me.uid && !isStaff(me)) return freason('FORBIDDEN', 403, 'not_owner', 'only the owner can manage this domain');
+                if (row.status === 'active') return freason('VALIDATION', 400, 'already_active', 'domain is already active');
+                if (row.status === 'disabled') return freason('FORBIDDEN', 403, 'disabled_domain', 'this domain has been disabled by an admin');
+                if (row.mode === 'redirect') return freason('VALIDATION', 400, 'no_verify_needed', 'redirect domains do not need verification');
                 let ok = false;
                 try {
                     const resp = row.mode === 'git'
@@ -1551,8 +1557,12 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         : await fetch('https://' + row.fqdn + '/.well-known/erisdev-verify.txt?t=' + Date.now(), { cf: { cacheTtl: 0 } });
                     ok = resp.ok && String(await resp.text()).trim() === row.verify_code;
                 } catch (e) { ok = false; }
-                if (!ok) return fail('VERIFY_FAILED', 400, 'verification file not found or content mismatched; check its location and content');
+                if (!ok) return freason('VERIFY_FAILED', 400, 'verify_failed', 'verification file not found or content mismatched; check its location and content');
                 await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                // dns 模式生效后撤销路由：流量此后直达源站，不再占 Worker
+                if (row.mode === 'dns' && row.route_id) {
+                    try { await cfRouteApi(env, 'DELETE', null, row.route_id); await db.prepare('UPDATE module_domains SET route_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run(); } catch (e) { /* 路由残留无害，删除域名时再清 */ }
+                }
                 await audit(db, me.uid, 'domain.verify', row.fqdn, '');
                 notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + row.fqdn,
                     '你的模块「' + row.module_name + '」托管域名验证通过并已生效，现在可以通过 https://' + row.fqdn + ' 访问。',
@@ -1567,12 +1577,12 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 const totpErr = await requireTotp(db, me, b);
                 if (totpErr) return totpErr;
                 const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(dmm[1])).first();
-                if (!row) return fail('NOT_FOUND', 404, 'domain not found');
-                if (row.uid !== me.uid && !isStaff(me)) return fail('FORBIDDEN', 403, 'only the owner can manage this domain');
+                if (!row) return freason('NOT_FOUND', 404, 'domain_missing', 'domain not found');
+                if (row.uid !== me.uid && !isStaff(me)) return freason('FORBIDDEN', 403, 'not_owner', 'only the owner can manage this domain');
                 const action = String(b.action || '');
 
                 if (action === 'pause') {
-                    if (row.status !== 'active') return fail('VALIDATION', 400, 'only active domains can be paused');
+                    if (row.status !== 'active') return freason('VALIDATION', 400, 'bad_state', 'only active domains can be paused');
                     // dns 模式无 Worker 路由：暂停 = 摘除 DNS 记录（resume 时按存档重建）
                     if (row.mode === 'dns' && row.dns_record_id && env.CF_DNS_TOKEN) {
                         try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ }
@@ -1580,7 +1590,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     }
                     await db.prepare("UPDATE module_domains SET status = 'paused', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
                 } else if (action === 'resume') {
-                    if (row.status !== 'paused') return fail('VALIDATION', 400, 'only paused domains can be resumed');
+                    if (row.status !== 'paused') return freason('VALIDATION', 400, 'bad_state', 'only paused domains can be resumed');
                     // dns 模式恢复：重建 DNS 记录
                     if (row.mode === 'dns' && env.CF_DNS_TOKEN) {
                         const rec = await cfDnsApi(env, 'POST', {
@@ -1599,12 +1609,12 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     }
                     await db.prepare('DELETE FROM module_domains WHERE fqdn = ?1').bind(row.fqdn).run();
                 } else if (action === 'update') {
-                    if (row.status === 'disabled') return fail('FORBIDDEN', 403, 'this domain has been disabled by an admin');
+                    if (row.status === 'disabled') return freason('FORBIDDEN', 403, 'disabled_domain', 'this domain has been disabled by an admin');
                     if (row.mode === 'git') {
                         const g = parseGitRepo(b.repo, String(b.platform || '').toLowerCase());
-                        if (!g) return fail('VALIDATION', 400, 'repo must be a full https URL of the selected platform');
+                        if (!g) return freason('VALIDATION', 400, 'bad_repo', 'repo must be a full https URL of the selected platform');
                         const branch = String(b.branch || '').trim();
-                        if (!DOMAIN_BRANCH_RE.test(branch) || branch.startsWith('/') || branch.endsWith('/')) return fail('VALIDATION', 400, 'invalid branch name');
+                        if (!DOMAIN_BRANCH_RE.test(branch) || branch.startsWith('/') || branch.endsWith('/')) return freason('VALIDATION', 400, 'bad_branch', 'invalid branch name');
                         // 换仓库/分支后重新判定：同源仓库免验证，其余回待验证
                         const cached = await getCachedPackages(db);
                         const info = cached.packages ? containerOf(cached.packages, row.module_type)[row.module_name] : null;
@@ -1613,7 +1623,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                             .bind(g.owner + '/' + g.repo, g.host, g.base, branch, same ? 'active' : 'verifying', now(), row.fqdn).run();
                     } else if (row.mode === 'redirect') {
                         const t = String(b.target_url || '').trim();
-                        if (!/^https:\/\/[^\s]{1,500}$/.test(t)) return fail('VALIDATION', 400, 'target_url must be an https:// URL');
+                        if (!/^https:\/\/[^\s]{1,500}$/.test(t)) return freason('VALIDATION', 400, 'bad_target', 'target_url must be an https:// URL');
                         await db.prepare('UPDATE module_domains SET target_url = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(t, now(), row.fqdn).run();
                     } else {
                         // dns 模式仅允许改记录值（改类型需 CF 上先删旧记录，故不接受）
@@ -1633,7 +1643,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         await db.prepare('UPDATE module_domains SET dns_value = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newValue, now(), row.fqdn).run();
                     }
                 } else {
-                    return fail('VALIDATION', 400, 'unknown action');
+                    return freason('VALIDATION', 400, 'unknown_action', 'unknown action');
                 }
                 await audit(db, me.uid, 'domain.' + action, row.fqdn, '');
                 return json({ ok: true });

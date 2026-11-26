@@ -61,6 +61,11 @@ function normalizePath(pathname) {
     return segs;
 }
 
+/** dns 模式回源：源站不可达时给可读错误页，避免裸 1101 */
+function originFetch(request) {
+    return fetch(request).catch(() => page('源站无法连接 · Origin unreachable', '<p>源站暂时无法连接，请稍后重试；若持续失败请联系站点所有者。</p><p>The origin server could not be reached. Try again later, or contact the site owner if this persists.</p>', 502));
+}
+
 /** 分支文件 → 正确 MIME + nosniff 的响应，GET 时写入版本化缓存 */
 function serveBranchFile(upstream, filePath, cacheKey, cache, ctx, doCache) {
     const ext = filePath.includes('.') ? filePath.split('.').pop().toLowerCase() : '';
@@ -122,7 +127,13 @@ export async function handleDomainRequest(request, env, ctx) {
     // ── dns 模式：原样回源（disabled 拦截；verifying 也透传，源站要提供验证文件）──
     if (row.mode === 'dns') {
         if (row.status === 'disabled') return page('域名已被停用 · Disabled', '<p>该域名已被管理员停用。如认为存在误会，请联系 ErisPulse 团队。</p><p>This domain has been disabled by an admin. Contact the ErisPulse team if you believe this is a mistake.</p>', 403);
-        return fetch(request);
+        if (row.status === 'paused') return page('域名已暂停 · Paused', '<p>所有者已暂停该站点。</p><p>This site has been paused by its owner.</p>', 503);
+        // 验证期只放行验证文件路径，其余拦截（未验证的源站内容不得对外暴露）
+        if (row.status === 'verifying') {
+            if (url.pathname === '/.well-known/erisdev-verify.txt') return originFetch(request);
+            return page('等待所有权验证 · Pending verification', '<p>该域名正在等待所有权验证。</p><p>在 workbench.erisdev.com「托管域名」页完成验证后即可访问。</p><p>Ownership verification is pending — the site goes live once verified on the Hosted Domains page at workbench.erisdev.com.</p>', 503);
+        }
+        return originFetch(request);
     }
 
     if (row.status === 'disabled') return page('域名已被停用 · Disabled', '<p>该域名已被管理员停用。如认为存在误会，请联系 ErisPulse 团队。</p><p>This domain has been disabled by an admin. Contact the ErisPulse team if you believe this is a mistake.</p>', 403);

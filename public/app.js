@@ -69,6 +69,8 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
             module: '选择模块', mineOnly: '仅限你拥有的已收录模块',
             label: '域名前缀', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '仓库平台', hintSelfHost: '自建实例需公网可经 HTTPS 访问；GitHub/Codeberg 会自动识别',
+            repo: '仓库地址', branch: '分支', target: '跳转目标（https://）', dnsType: '记录类型', dnsValue: '记录值',
+            rLabelInvalid: '前缀仅限小写字母、数字与中缀连字符', rLabelReserved: '该前缀为保留名', rLabelTaken: '该前缀已被占用', rLimitModule: '该模块的域名数已达上限', rLimitUser: '该账户的域名数已达上限', rNotOwner: '仅模块所有者可操作', rBadRepo: '仓库地址不合法', rBadBranch: '分支名不合法', rBadTarget: '跳转目标需为 https:// URL', rBadDnsValue: '记录值不合法', rVerifyFailed: '验证未通过', rDisabled: '该域名已被停用',
             submit: '提交申请', list: '我的域名', empty: '还没有托管域名',
             stVerifying: '待验证', stActive: '生效中', stPaused: '已暂停', stDisabled: '已停用',
             verify: '验证', pause: '暂停', resume: '恢复',
@@ -150,6 +152,8 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
             module: '選擇模組', mineOnly: '僅限你擁有的已收錄模組',
             label: '網域前綴', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '儲存庫平台', hintSelfHost: '自建實例需公網可經 HTTPS 存取；GitHub/Codeberg 會自動識別',
+            repo: '儲存庫位址', branch: '分支', target: '轉址目標（https://）', dnsType: '記錄類型', dnsValue: '記錄值',
+            rLabelInvalid: '前綴僅限小寫字母、數字與中綴連字號', rLabelReserved: '該前綴為保留名', rLabelTaken: '該前綴已被占用', rLimitModule: '該模組的網域數已達上限', rLimitUser: '該帳戶的網域數已達上限', rNotOwner: '僅模組所有者可操作', rBadRepo: '儲存庫位址不合法', rBadBranch: '分支名不合法', rBadTarget: '轉址目標需為 https:// URL', rBadDnsValue: '記錄值不合法', rVerifyFailed: '驗證未通過', rDisabled: '該網域已被停用',
             submit: '提交申請', list: '我的網域', empty: '還沒有託管網域',
             stVerifying: '待驗證', stActive: '生效中', stPaused: '已暫停', stDisabled: '已停用',
             verify: '驗證', pause: '暫停', resume: '恢復',
@@ -231,6 +235,8 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
             module: 'Select Module', mineOnly: 'Only your registered modules',
             label: 'Domain Label', labelAvail: (f) => `plugin-${f}.erisdev.com is available`,
             platform: 'Repository Platform', hintSelfHost: 'Self-hosted instances must be publicly reachable over HTTPS; GitHub/Codeberg URLs are auto-detected',
+            repo: 'Repository URL', branch: 'Branch', target: 'Redirect Target (https://)', dnsType: 'Record Type', dnsValue: 'Record Value',
+            rLabelInvalid: 'Label must be lowercase letters, digits and inner hyphens', rLabelReserved: 'This label is reserved', rLabelTaken: 'This label is already taken', rLimitModule: 'This module reached its domain limit', rLimitUser: 'This account reached its domain limit', rNotOwner: 'Only the module owner can do this', rBadRepo: 'Invalid repository URL', rBadBranch: 'Invalid branch name', rBadTarget: 'Target must be an https:// URL', rBadDnsValue: 'Invalid record value', rVerifyFailed: 'Verification failed', rDisabled: 'This domain has been disabled',
             submit: 'Submit Request', list: 'My Domains', empty: 'No hosted domains yet',
             stVerifying: 'Verifying', stActive: 'Active', stPaused: 'Paused', stDisabled: 'Disabled',
             verify: 'Verify', pause: 'Pause', resume: 'Resume',
@@ -312,6 +318,8 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
             module: 'モジュールを選択', mineOnly: '自分が所有する登録済みモジュールのみ',
             label: 'ドメインプレフィックス', labelAvail: (f) => `plugin-${f}.erisdev.com は利用可能`,
             platform: 'リポジトリプラットフォーム', hintSelfHost: '自前インスタンスは HTTPS で公開到達可能である必要があります。GitHub/Codeberg は自動判別',
+            repo: 'リポジトリ URL', branch: 'ブランチ', target: '転送先（https://）', dnsType: 'レコード種別', dnsValue: 'レコード値',
+            rLabelInvalid: 'プレフィックスは小文字英字・数字・内部ハイフンのみ', rLabelReserved: 'このプレフィックスは予約済み', rLabelTaken: 'このプレフィックスは使用中', rLimitModule: 'このモジュールのドメイン数が上限に達しました', rLimitUser: 'このアカウントのドメイン数が上限に達しました', rNotOwner: 'モジュールの所有者のみ操作できます', rBadRepo: 'リポジトリ URL が不正です', rBadBranch: 'ブランチ名が不正です', rBadTarget: '転送先は https:// URL を指定してください', rBadDnsValue: 'レコード値が不正です', rVerifyFailed: '検証に失敗しました', rDisabled: 'このドメインは停止されています',
             submit: '申請を送信', list: 'マイドメイン', empty: 'ホストドメインはまだありません',
             stVerifying: '検証中', stActive: '有効', stPaused: '一時停止', stDisabled: '停止中',
             verify: '検証', pause: '一時停止', resume: '再開',
@@ -393,6 +401,8 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
             module: 'Выберите модуль', mineOnly: 'Только ваши зарегистрированные модули',
             label: 'Метка домена', labelAvail: (f) => `plugin-${f}.erisdev.com доступен`,
             platform: 'Платформа репозитория', hintSelfHost: 'Собственные инстансы должны быть доступны по HTTPS из интернета; GitHub/Codeberg распознаются автоматически',
+            repo: 'URL репозитория', branch: 'Ветка', target: 'Цель перенаправления (https://)', dnsType: 'Тип записи', dnsValue: 'Значение записи',
+            rLabelInvalid: 'Метка: строчные буквы, цифры и внутренние дефисы', rLabelReserved: 'Эта метка зарезервирована', rLabelTaken: 'Эта метка уже занята', rLimitModule: 'Лимит доменов для модуля исчерпан', rLimitUser: 'Лимит доменов для аккаунта исчерпан', rNotOwner: 'Доступно только владельцу модуля', rBadRepo: 'Неверный URL репозитория', rBadBranch: 'Неверное имя ветки', rBadTarget: 'Цель должна быть https:// URL', rBadDnsValue: 'Неверное значение записи', rVerifyFailed: 'Проверка не пройдена', rDisabled: 'Этот домен отключён',
             submit: 'Отправить заявку', list: 'Мои домены', empty: 'Доменов пока нет',
             stVerifying: 'Ожидает проверки', stActive: 'Активен', stPaused: 'Приостановлен', stDisabled: 'Отключён',
             verify: 'Проверить', pause: 'Пауза', resume: 'Возобновить',
@@ -1203,6 +1213,9 @@ function renderModRows(v) {
 // ═══ 托管域名（plugin-<label>.erisdev.com：git 分支 / 重定向 / 自有服务器）═══
 async function viewDomains(v) {
     const dm = k => t('dm.' + k);
+    // API 返回机读 reason（蛇形键）→ 前端查 i18n 字典，缺失时回退英文 message
+    const DM_REASON_MAP = { label_invalid: 'rLabelInvalid', label_reserved: 'rLabelReserved', label_taken: 'rLabelTaken', limit_module: 'rLimitModule', limit_user: 'rLimitUser', not_owner: 'rNotOwner', bad_repo: 'rBadRepo', bad_branch: 'rBadBranch', bad_target: 'rBadTarget', bad_dns_value: 'rBadDnsValue', verify_failed: 'rVerifyFailed', disabled_domain: 'rDisabled' };
+    const dmErr = (d, fb) => { const v = d && d.reason && DM_REASON_MAP[d.reason] && t('dm.' + DM_REASON_MAP[d.reason]); return (v && v !== 'dm.' + DM_REASON_MAP[d.reason]) ? v : (d.message || d.error || fb); };
     v.innerHTML = `<div class="page-title">${esc(t('nav.domains'))}</div><div class="page-desc">${esc(dm('desc'))}</div>
         <div class="card" style="max-width:860px">
             <h3>${esc(dm('apply'))}</h3>
@@ -1349,7 +1362,7 @@ async function viewDomains(v) {
             return api('/api/domains', { method: 'POST', body: JSON.stringify(payload) });
         });
         if (d.cancelled) return;
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         toast(d.status === 'active' ? dm('okActive')(d.fqdn) : dm('applied'));
         loadView();
     });
@@ -1407,13 +1420,13 @@ async function viewDomains(v) {
         const action = row && row.status === 'active' ? 'pause' : 'resume';
         const d = await withTotp(code => api('/api/domains/' + b.dataset.fqdn + '/manage', { method: 'POST', body: JSON.stringify({ action, totp_code: code || undefined }) }));
         if (d.cancelled) return;
-        d.error ? toast(d.message || d.error, 1) : reload();
+        d.error ? toast(dmErr(d), 1) : reload();
     });
     listEl.querySelectorAll('[data-dm-act="delete"]').forEach(b => b.onclick = async () => {
         if (!(await uiConfirm(t('confirmDelete')))) return;
         const d = await withTotp(code => api('/api/domains/' + b.dataset.fqdn + '/manage', { method: 'POST', body: JSON.stringify({ action: 'delete', totp_code: code || undefined }) }));
         if (d.cancelled) return;
-        d.error ? toast(d.message || d.error, 1) : reload();
+        d.error ? toast(dmErr(d), 1) : reload();
     });
 }
 
@@ -1516,7 +1529,7 @@ function viewModuleDetail(v) {
         claimBtn.onclick = () => { const box = $('#md-claim-box'); box.hidden = !box.hidden; };
         $('#md-claim-submit').onclick = async () => {
             const d = await api('/api/modules/claim', { method: 'POST', body: JSON.stringify({ name: m.name, type: m.type, reason: $('#md-claim-reason').value }) });
-            if (d.error) return toast(d.message || d.error, 1);
+            if (d.error) return toast(dmErr(d), 1);
             toast(t('clSubmitted'));
             $('#md-claim-box').hidden = true;
         };
@@ -1576,7 +1589,7 @@ function viewModuleDetail(v) {
         };
         const d = await withTotp(code => api('/api/modules/manage', { method: 'POST', body: JSON.stringify({ action: 'edit', name: m.name, type: m.type, edit_data: body, totp_code: code || undefined }) }));
         if (d.cancelled) return;
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         clearDirty();
         toast(t('editOk'));
         S.modDetail = null; loadView();
@@ -1750,7 +1763,7 @@ function viewSubmit(v) {
             return api('/api/modules/submit', { method: 'POST', body: JSON.stringify(payload) });
         });
         if (d.cancelled) return;
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         clearDirty();
         toast(t('submitOk'));
         S.view = 'modules'; render();
@@ -1804,7 +1817,7 @@ async function viewClients(v) {
     $('#cl-create').onclick = () => busy($('#cl-create'), async () => {
         const uris = $('#cl-uris').value.split(/\n|,/).map(x => x.trim()).filter(Boolean);
         const d = await api('/api/clients', { method: 'POST', body: JSON.stringify({ name: $('#cl-name').value, redirect_uris: uris }) });
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         const out = $('#cl-result');
         out.hidden = false;
         out.textContent = 'client_id: ' + d.client_id + '\nclient_secret: ' + d.client_secret + '\n' + t('secretOnce');
@@ -1814,13 +1827,13 @@ async function viewClients(v) {
     v.querySelectorAll('[data-secret]').forEach(b => b.onclick = async () => {
         if (!(await uiConfirm(t('clResetConfirm')))) return;
         const d = await api('/api/clients/' + b.dataset.secret + '/secret', { method: 'POST' });
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         alert('client_secret: ' + d.client_secret + '\n' + t('secretOnce'));
     });
     v.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
         if (!(await uiConfirm(t('confirmDelete')))) return;
         const d = await api('/api/clients/' + b.dataset.del + '/delete', { method: 'POST' });
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         toast(t('saved')); loadView();
     });
 }
@@ -1882,7 +1895,7 @@ async function viewProfile(v) {
     const setupBtn = $('#tf-setup');
     if (setupBtn) setupBtn.onclick = async () => {
         const d = await api('/api/me/totp/setup', { method: 'POST' });
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         $('#tf-setup-box').innerHTML = `
             <div class="tf-qr" id="tf-qr"></div>
             <p class="tf-qr-hint">${esc(t('sec2faScan'))}</p>
@@ -1914,7 +1927,7 @@ async function viewProfile(v) {
         const code = $('#tf-off-code').value.trim();
         if (!/^\d{6}$/.test(code)) return toast(t('fillFirst')(t('code')), 1);
         const d = await api('/api/me/totp/disable', { method: 'POST', body: JSON.stringify({ code }) });
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         toast(t('sec2faDisabled')); await refreshMe(); loadView();
     };
 }
@@ -2009,7 +2022,7 @@ async function viewTokens(v) {
             if (!code) return;
             d = await api('/api/tokens', { method: 'POST', body: JSON.stringify({ name: $('#tk-name').value, skip_2fa: skip2fa, totp_code: code }) });
         }
-        if (d.error) return toast(d.message || d.error, 1);
+        if (d.error) return toast(dmErr(d), 1);
         // 令牌模态窗：仅此一次显示，关闭即不可再见
         const ov = document.createElement('div');
         ov.style.cssText = 'position:fixed;inset:0;background:var(--modal);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px';
