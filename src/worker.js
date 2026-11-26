@@ -2,7 +2,7 @@
 // 架构：Cloudflare Worker（本文件）+ D1 + 静态前端（public/）
 // 完全开源，接受社区监督。
 
-import { isDomainHost, isDomainGate, handleDomainRequest } from './domains.js';
+
 import { R2_MAX_ZIP, R2_TOTAL_LIMIT, r2PutObject, r2DeleteObject, r2ListObjects, r2AttachDomain, r2SetDomainEnabled, r2DetachDomain, r2CreateBucket, r2DeleteBucket, r2AddBytes, r2GetTotalBytes, r2EmptyBucket, extractZip, mimeOf } from './r2.js';
 
 // ── OAuth 上游（作为客户端登录）──
@@ -856,12 +856,6 @@ export default {
         const method = request.method;
         const db = env.DB;
 
-        // ── 模块托管域名站点服务（plugin-*.erisdev.com 与引导页，逻辑在 domains.js）──
-        const h = url.hostname.toLowerCase();
-        if (isDomainHost(h) || isDomainGate(h)) {
-            return handleDomainRequest(request, env, ctx);
-        }
-
         // 静态资源（ASSETS binding）
         if (!path.startsWith('/api/') && path !== '/oauth') {
             return env.ASSETS.fetch(request);
@@ -1578,7 +1572,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     {
                         let route;
                         try {
-                            route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-workbench' });
+                            route = await cfRouteApi(env, 'POST', { pattern: fqdn + '/*', script: 'erispulse-plugin-domains' });
                         } catch (e) {
                             if (!/already exists/i.test(String(e.message || e))) throw e;
                             const list = await cfRouteApi(env, 'GET');
