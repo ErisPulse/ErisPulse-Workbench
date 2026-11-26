@@ -643,3 +643,38 @@ tr:hover td { background: var(--accent-soft); }
 .tf-qr { display: flex; justify-content: center; margin: 4px 0 8px; }
 .tf-qr svg { width: 168px; height: 168px; background: #fff; padding: 8px; border-radius: 10px; }
 .tf-qr-hint { margin: 0 0 14px; font-size: 12px; color: var(--tx-t); text-align: center; }
+
+/* ── 自建下拉（nselect）：替换原生 select，弹层挂 body 不受容器裁剪 ── */
+select.ns-src { display: none !important; }
+.nselect { display: inline-flex; width: 100%; position: relative; }
+.nselect.mini { width: auto; }
+.nselect-btn {
+    display: inline-flex; align-items: center; justify-content: space-between; gap: 8px;
+    width: 100%; min-height: 37px; padding: 8px 12px;
+    border-radius: var(--radius-md); border: 1px solid var(--bd);
+    background: color-mix(in srgb, var(--bg-t) 55%, transparent);
+    color: var(--tx-p); font-size: 13px; font-family: inherit; text-align: left;
+    cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.nselect-btn:hover { border-color: var(--accent-h); }
+.nselect-btn:focus-visible, .nselect.open .nselect-btn { border-color: var(--accent); box-shadow: 0 0 0 3.5px var(--accent-soft); outline: none; }
+.nselect.mini .nselect-btn { min-height: 0; padding: 4px 8px; border-radius: 8px; font-size: 12px; gap: 5px; }
+.nselect-val { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nselect-chev { display: inline-flex; flex: none; color: var(--tx-s); transition: transform .15s ease; }
+.nselect.open .nselect-chev { transform: rotate(180deg); }
+.nselect-pop {
+    position: fixed; z-index: 1300; min-width: 160px; max-height: 264px; overflow: auto;
+    background: var(--bg-t); border: 1px solid var(--bd); border-radius: var(--radius-md);
+    box-shadow: 0 18px 48px -12px rgba(15, 23, 42, .35); padding: 5px;
+    animation: ns-pop .13s ease;
+}
+@keyframes ns-pop { from { opacity: 0; transform: translateY(-3px); } }
+.nselect-opt {
+    display: block; width: 100%; text-align: left; padding: 8px 10px;
+    border: none; border-radius: var(--radius-sm); background: transparent;
+    color: var(--tx-p); font-size: 13px; font-family: inherit; cursor: pointer;
+}
+.nselect-opt:hover, .nselect-opt.on { background: var(--accent-soft); color: var(--accent-h); }
+.nselect-opt.on { font-weight: 600; }
+.nselect-opt.dis { opacity: .45; pointer-events: none; }
+[data-theme="dark"] .nselect-pop { box-shadow: 0 18px 48px -12px rgba(0, 0, 0, .6); }

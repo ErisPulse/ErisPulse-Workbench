@@ -593,6 +593,108 @@ async function confirmLeave() {
     return true;
 }
 
+// ═══ 自建下拉组件：替换原生 <select>（统一玻璃风格 + 键盘可用）═══
+// 原元素保留在 DOM（.ns-src 隐藏），控件更新其 value 并派发 change —— 业务代码无感
+const NS_CHEV = SVG('<polyline points="6 9 12 15 18 9"/>');
+function niceSelectify(root) {
+    root.querySelectorAll('select').forEach(sel => {
+        if (sel.dataset.nice) return;
+        sel.dataset.nice = '1';
+        sel.classList.add('ns-src');
+        sel.tabIndex = -1;
+        const mini = sel.classList.contains('mini-select');
+        const wrap = document.createElement('span');
+        wrap.className = 'nselect' + (mini ? ' mini' : '');
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'nselect-btn';
+        btn.setAttribute('aria-haspopup', 'listbox');
+        btn.setAttribute('aria-expanded', 'false');
+        btn.innerHTML = `<span class="nselect-val">${esc(sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '')}</span><span class="nselect-chev">${NS_CHEV}</span>`;
+        wrap.appendChild(btn);
+        sel.after(wrap);
+
+        let pop = null, activeIdx = -1;
+        const opts = () => [...sel.options];
+
+        const close = () => {
+            if (!pop) return;
+            pop.remove(); pop = null;
+            wrap.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+            document.removeEventListener('click', onDoc, true);
+            window.removeEventListener('scroll', close, true);
+            window.removeEventListener('resize', close);
+        };
+        const onDoc = e => { if (pop && !pop.contains(e.target) && !wrap.contains(e.target)) close(); };
+
+        const setActive = i => {
+            activeIdx = i;
+            [...pop.children].forEach((el, k) => el.classList.toggle('on', k === activeIdx));
+            if (pop.children[activeIdx]) pop.children[activeIdx].scrollIntoView({ block: 'nearest' });
+        };
+        const pick = i => {
+            const o = opts()[i];
+            if (!o || o.disabled) return;
+            if (sel.value !== o.value) {
+                sel.value = o.value;
+                sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            btn.querySelector('.nselect-val').textContent = o.textContent;
+            close();
+            btn.focus();
+        };
+
+        const open = () => {
+            if (pop) return close();
+            pop = document.createElement('div');
+            pop.className = 'nselect-pop';
+            pop.setAttribute('role', 'listbox');
+            opts().forEach((o, i) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'nselect-opt' + (o.value === sel.value ? ' on' : '') + (o.disabled ? ' dis' : '');
+                b.textContent = o.textContent;
+                b.onclick = () => pick(i);
+                pop.appendChild(b);
+            });
+            document.body.appendChild(pop);
+            // fixed 定位：贴触发钮下方，下方的空间不足则翻到上方
+            const r = btn.getBoundingClientRect();
+            pop.style.minWidth = r.width + 'px';
+            const ph = Math.min(pop.scrollHeight, 264);
+            const below = window.innerHeight - r.bottom;
+            pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - pop.offsetWidth - 8)) + 'px';
+            if (below < ph + 12 && r.top > ph + 12) {
+                pop.style.top = 'auto';
+                pop.style.bottom = (window.innerHeight - r.top + 6) + 'px';
+            } else {
+                pop.style.bottom = 'auto';
+                pop.style.top = (r.bottom + 6) + 'px';
+            }
+            setActive(Math.max(sel.selectedIndex, 0));
+            wrap.classList.add('open');
+            btn.setAttribute('aria-expanded', 'true');
+            document.addEventListener('click', onDoc, true);
+            window.addEventListener('scroll', close, true);
+            window.addEventListener('resize', close);
+        };
+
+        btn.onclick = open;
+        btn.onkeydown = e => {
+            if (!pop) {
+                if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) { e.preventDefault(); open(); }
+                return;
+            }
+            if (e.key === 'Escape') close();
+            else if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(activeIdx + 1, opts().length - 1)); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+            else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(activeIdx); }
+            else if (e.key === 'Tab') close();
+        };
+    });
+}
+
 async function api(path, opts = {}) {
     const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
     if (S.token) headers.Authorization = 'Bearer ' + S.token;
@@ -1196,6 +1298,7 @@ async function viewDomains(v) {
     };
     $('#dm-platform').onchange = syncPlatform;
     syncPlatform();
+    niceSelectify(v);
 
     // ── 前缀即时可用性（防抖查询服务端）──
     let checkTimer = null;
@@ -1475,6 +1578,7 @@ function viewModuleDetail(v) {
         toast(t('editOk'));
         S.modDetail = null; loadView();
     });
+    niceSelectify(v);
     mdRefresh();
 }
 
@@ -1648,6 +1752,7 @@ function viewSubmit(v) {
         toast(t('submitOk'));
         S.view = 'modules'; render();
     });
+    niceSelectify(v);
     refreshPreview();
 }
 
@@ -1675,6 +1780,7 @@ async function viewUsers(v) {
         const d = await api('/api/admin/users/' + b.dataset.ban + '/ban', { method: 'POST', body: JSON.stringify({ banned: b.dataset.to === '1' }) });
         d.error ? toast(d.message || d.error, 1) : (toast(t('saved')), loadView());
     });
+    niceSelectify(v);
 }
 
 async function viewClients(v) {
