@@ -629,6 +629,7 @@ function niceSelectify(root) {
         wrap.appendChild(btn);
         sel.after(wrap);
 
+        sel._niceRefresh = () => { const o = sel.options[sel.selectedIndex]; if (o) btn.querySelector('.nselect-val').textContent = o.textContent; };
         let pop = null, activeIdx = -1;
         const opts = () => [...sel.options];
 
@@ -1250,7 +1251,7 @@ async function viewDomains(v) {
                         <option value="gitea">Gitea / Forgejo</option>
                         <option value="gitlab">GitLab</option>
                     </select><div class="hint" id="dm-platform-hint"></div></div>
-                    <div class="field"><label>${esc(dm('branch'))} *</label><input id="dm-branch" placeholder="main" autocomplete="off" spellcheck="false"></div>
+                    <div class="field"><label>${esc(dm('branch'))} *</label><input id="dm-branch" placeholder="ep-site" autocomplete="off" spellcheck="false"></div>
                 </div>
                 <div class="field"><label>${esc(dm('repo'))} *</label><input id="dm-repo" placeholder="https://github.com/owner/repo" autocomplete="off" spellcheck="false"></div>
             </div>
@@ -1307,7 +1308,7 @@ async function viewDomains(v) {
         if (pre.repo) $('#dm-repo').value = pre.repo;
     }
 
-    // ── 选择模块后自动填充仓库（平台/地址取模块登记 repository，分支默认 main）──
+    // ── 选择模块后自动填充仓库（平台/地址取模块登记 repository，分支默认 ep-site）──
     const fillRepoFromModule = () => {
         const [type, name] = sel.value.split(':');
         const m = myMods.find(x => x.type === type && x.name === name);
@@ -1315,12 +1316,10 @@ async function viewDomains(v) {
         if (!parsed) return;
         $('#dm-platform').value = parsed.host === 'github.com' ? 'github' : 'codeberg';
         $('#dm-repo').value = 'https://' + parsed.host + '/' + parsed.owner + '/' + parsed.repo;
-        if (!$('#dm-branch').value.trim()) $('#dm-branch').value = 'main';
+        if (!$('#dm-branch').value.trim()) $('#dm-branch').value = 'ep-site';
+        $('#dm-platform')._niceRefresh && $('#dm-platform')._niceRefresh();
         syncPlatform();
-        $('#dm-branch').dispatchEvent(new Event('input'));
     };
-    sel.addEventListener('change', fillRepoFromModule);
-    fillRepoFromModule();
     // ── 模式切换：字段显隐 + 提示 ──
     const syncMode = () => {
         const mode = $('#dm-mode').value;
@@ -1343,6 +1342,8 @@ async function viewDomains(v) {
     $('#dm-platform').onchange = syncPlatform;
     syncPlatform();
     niceSelectify(v);
+    sel.addEventListener('change', fillRepoFromModule);
+    fillRepoFromModule();
 
     // ── 前缀即时可用性（防抖查询服务端）──
     let checkTimer = null;
