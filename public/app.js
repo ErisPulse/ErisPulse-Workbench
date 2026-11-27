@@ -1384,6 +1384,11 @@ async function viewDomains(v) {
             const f = $('#dm-zip').files[0];
             if (!f) return toast(dm('pickZip'), 1);
             if (f.size > 5 * 1024 * 1024) return toast(dm('errZipSize'), 1);
+        } else {
+            body.dns_type = $('#dm-dns-type').value;
+            const val = $('#dm-dns-value').value.trim();
+            if (!val) return toast(dm('errDnsValue'), 1);
+            body.dns_value = val;
         }
         const d = await withTotp(code => {
             if (mode === 'upload') {
