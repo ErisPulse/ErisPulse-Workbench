@@ -63,10 +63,10 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
         dm: {
             desc: '为已发布的模块申请免费托管域名：plugin-<前缀>.erisdev.com',
             apply: '申请新域名', mode: '接入方式',
-            modeGit: '仓库分支（推荐）', hintGit: '指定 git 仓库与分支，分支内容直接作为站点展示，支持 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
-            modeUpload: '上传静态站点（zip ≤5MB）', hintUpload: '上传 zip 包（≤5MB），由平台 R2 直接托管，无需自己的服务器', pickZip: '选择站点 zip 包', verifyExpire: '（超过 7 天未验证将自动释放该前缀）', reupload: '重新上传', errZipSize: 'zip 需 ≤5MB',
+            modeGit: '仓库分支', hintGit: '指定 git 仓库与分支，分支内容直接作为站点展示，支持 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
+            modeUpload: '上传静态站点', hintUpload: '上传站点 zip 包（≤5MB，解压后 ≤20MB）', chooseFile: '选择文件', pickZip: '选择站点 zip 包', verifyExpire: '（超过 7 天未验证将自动释放该前缀）', reupload: '重新上传', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重定向', hintRedirect: '访问时 301 跳转到你填写的 https 地址',
-            modeDns: '自有服务器（高级）', hintDns: '把域名解析到你自己的服务器（CNAME / A / AAAA）',
+            modeDns: '自有服务器', hintDns: '把域名解析到你自己的服务器（CNAME / A / AAAA）',
             module: '选择模块', mineOnly: '仅限你拥有的已收录模块',
             label: '域名前缀', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '仓库平台', hintSelfHost: '自建实例需公网可经 HTTPS 访问；GitHub/Codeberg 会自动识别',
@@ -147,10 +147,10 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
         dm: {
             desc: '為已發布的模組申請免費託管網域：plugin-<前綴>.erisdev.com',
             apply: '申請新網域', mode: '接入方式',
-            modeGit: '儲存庫分支（推薦）', hintGit: '指定 git 儲存庫與分支，分支內容直接作為站點展示，支援 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
-            modeUpload: '上傳靜態站點（zip ≤5MB）', hintUpload: '上傳 zip 包（≤5MB），由平台 R2 直接託管，無需自己的伺服器', pickZip: '選擇站點 zip 包', verifyExpire: '（超過 7 天未驗證將自動釋放該前綴）', reupload: '重新上傳', errZipSize: 'zip 需 ≤5MB',
+            modeGit: '儲存庫分支', hintGit: '指定 git 儲存庫與分支，分支內容直接作為站點展示，支援 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
+            modeUpload: '上傳靜態站點', hintUpload: '上傳站點 zip 包（≤5MB，解壓後 ≤20MB）', chooseFile: '選擇檔案', pickZip: '選擇站點 zip 包', verifyExpire: '（超過 7 天未驗證將自動釋放該前綴）', reupload: '重新上傳', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重新導向', hintRedirect: '存取時 301 轉址到你填寫的 https 位址',
-            modeDns: '自有伺服器（進階）', hintDns: '把網域解析到你自己的伺服器（CNAME / A / AAAA）',
+            modeDns: '自有伺服器', hintDns: '把網域解析到你自己的伺服器（CNAME / A / AAAA）',
             module: '選擇模組', mineOnly: '僅限你擁有的已收錄模組',
             label: '網域前綴', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '儲存庫平台', hintSelfHost: '自建實例需公網可經 HTTPS 存取；GitHub/Codeberg 會自動識別',
@@ -231,10 +231,10 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
         dm: {
             desc: 'Request a free hosted domain for your published module: plugin-<label>.erisdev.com',
             apply: 'New Domain', mode: 'Integration Mode',
-            modeGit: 'Repo Branch (Recommended)', hintGit: 'Serve a git repo branch directly as the site — GitHub, Codeberg, self-hosted Gitea/Forgejo and GitLab supported',
-            modeUpload: 'Upload Static Site (zip ≤5MB)', hintUpload: 'Upload a zip (≤5MB); hosted on platform R2 — no server needed', pickZip: 'Pick site zip', verifyExpire: '(unverified labels are released after 7 days)', reupload: 'Re-upload', errZipSize: 'zip must be ≤5MB',
+            modeGit: 'Repo branch', hintGit: 'Serve a git repo branch directly as the site — GitHub, Codeberg, self-hosted Gitea/Forgejo and GitLab supported',
+            modeUpload: 'Upload static site', hintUpload: 'Upload a site zip (≤5MB, ≤20MB decompressed)', chooseFile: 'Choose file', pickZip: 'Pick site zip', verifyExpire: '(unverified labels are released after 7 days)', reupload: 'Re-upload', errZipSize: 'zip must be ≤5MB',
             modeRedirect: 'Redirect', hintRedirect: '301-redirect visitors to an https URL you provide',
-            modeDns: 'Own Server (Advanced)', hintDns: 'Point the domain at your own server (CNAME / A / AAAA)',
+            modeDns: 'Own server', hintDns: 'Point the domain at your own server (CNAME / A / AAAA)',
             module: 'Select Module', mineOnly: 'Only your registered modules',
             label: 'Domain Label', labelAvail: (f) => `plugin-${f}.erisdev.com is available`,
             platform: 'Repository Platform', hintSelfHost: 'Self-hosted instances must be publicly reachable over HTTPS; GitHub/Codeberg URLs are auto-detected',
@@ -315,10 +315,10 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
         dm: {
             desc: '公開済みモジュールに無料のホストドメインを申請：plugin-<プレフィックス>.erisdev.com',
             apply: '新規ドメイン申請', mode: '接続方式',
-            modeGit: 'リポジトリ分支（推奨）', hintGit: 'git リポジトリのブランチ内容をそのままサイトとして表示。GitHub / Codeberg / 自前 Gitea・Forgejo / GitLab に対応',
-            modeUpload: '静的サイト更新（zip ≤5MB）', hintUpload: 'zip（≤5MB）をアップロードするとプラットフォームの R2 で直接ホストされます', pickZip: 'サイト zip を選択', verifyExpire: '（7 日間未検証のプレフィックスは自動解放されます）', reupload: '再アップロード', errZipSize: 'zip は 5MB 以下',
+            modeGit: 'リポジトリ分支', hintGit: 'git リポジトリのブランチ内容をそのままサイトとして表示。GitHub / Codeberg / 自前 Gitea・Forgejo / GitLab に対応',
+            modeUpload: '静的サイトをアップロード', hintUpload: 'サイト zip をアップロード（≤5MB、解凍後 ≤20MB）', chooseFile: 'ファイルを選択', pickZip: 'サイト zip を選択', verifyExpire: '（7 日間未検証のプレフィックスは自動解放されます）', reupload: '再アップロード', errZipSize: 'zip は 5MB 以下',
             modeRedirect: 'リダイレクト', hintRedirect: 'アクセス時に入力した https アドレスへ 301 転送',
-            modeDns: '自前サーバー（上級）', hintDns: 'ドメインを自分のサーバーへ解決（CNAME / A / AAAA）',
+            modeDns: '自前サーバー', hintDns: 'ドメインを自分のサーバーへ解決（CNAME / A / AAAA）',
             module: 'モジュールを選択', mineOnly: '自分が所有する登録済みモジュールのみ',
             label: 'ドメインプレフィックス', labelAvail: (f) => `plugin-${f}.erisdev.com は利用可能`,
             platform: 'リポジトリプラットフォーム', hintSelfHost: '自前インスタンスは HTTPS で公開到達可能である必要があります。GitHub/Codeberg は自動判別',
@@ -399,10 +399,10 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
         dm: {
             desc: 'Бесплатный домен для опубликованного модуля: plugin-<метка>.erisdev.com',
             apply: 'Новый домен', mode: 'Способ подключения',
-            modeGit: 'Ветка репозитория (рекомендуется)', hintGit: 'Содержимое ветки git-репозитория публикуется как сайт — GitHub, Codeberg, свои Gitea/Forgejo и GitLab',
-            modeUpload: 'Загрузить статический сайт (zip ≤5MB)', hintUpload: 'Загрузите zip (≤5MB) — хостинг на R2 платформы, свой сервер не нужен', pickZip: 'Выберите zip сайта', verifyExpire: '(неподтверждённые метки освобождаются через 7 дней)', reupload: 'Перезагрузить', errZipSize: 'zip должен быть ≤5MB',
+            modeGit: 'Ветка репозитория', hintGit: 'Содержимое ветки git-репозитория публикуется как сайт — GitHub, Codeberg, свои Gitea/Forgejo и GitLab',
+            modeUpload: 'Загрузить статический сайт', hintUpload: 'Загрузите zip сайта (≤5MB, ≤20MB после распаковки)', chooseFile: 'Выбрать файл', pickZip: 'Выберите zip сайта', verifyExpire: '(неподтверждённые метки освобождаются через 7 дней)', reupload: 'Перезагрузить', errZipSize: 'zip должен быть ≤5MB',
             modeRedirect: 'Перенаправление', hintRedirect: '301-редирект на указанный https-адрес',
-            modeDns: 'Свой сервер (расширенный)', hintDns: 'Направить домен на свой сервер (CNAME / A / AAAA)',
+            modeDns: 'Свой сервер', hintDns: 'Направить домен на свой сервер (CNAME / A / AAAA)',
             module: 'Выберите модуль', mineOnly: 'Только ваши зарегистрированные модули',
             label: 'Метка домена', labelAvail: (f) => `plugin-${f}.erisdev.com доступен`,
             platform: 'Платформа репозитория', hintSelfHost: 'Собственные инстансы должны быть доступны по HTTPS из интернета; GitHub/Codeberg распознаются автоматически',
@@ -1267,7 +1267,10 @@ async function viewDomains(v) {
             </div>
             <div id="dm-upload-fields" hidden>
                 <div class="field"><label>${esc(dm('pickZip'))} *</label>
-                    <input type="file" id="dm-zip" accept=".zip" style="max-width:420px">
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <label class="btn ghost sm" style="cursor:pointer">${esc(dm('chooseFile'))}<input type="file" id="dm-zip" accept=".zip" hidden></label>
+                        <span class="muted" id="dm-zip-name" style="font-size:12px"></span>
+                    </div>
                     <div class="hint">${esc(dm('hintUpload'))}</div>
                 </div>
             </div>
@@ -1344,6 +1347,7 @@ async function viewDomains(v) {
     niceSelectify(v);
     sel.addEventListener('change', fillRepoFromModule);
     fillRepoFromModule();
+    $('#dm-zip').onchange = () => { const f = $('#dm-zip').files[0]; $('#dm-zip-name').textContent = f ? f.name : ''; };
 
     // ── 前缀即时可用性（防抖查询服务端）──
     let checkTimer = null;

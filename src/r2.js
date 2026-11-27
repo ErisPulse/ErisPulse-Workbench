@@ -21,7 +21,7 @@ async function r2Api(env, method, path, body) {
     const d = await resp.json().catch(() => ({}));
     if (!resp.ok || !d.success) {
         const msg = d.errors && d.errors[0] ? `${d.errors[0].code} ${d.errors[0].message}` : 'HTTP ' + resp.status;
-        throw R2_ERR('upstream_fail', 'R2 API: ' + msg);
+        throw R2_ERR('upstream_fail', 'R2 API [' + method + ' ' + path + ']: ' + msg);
     }
     return d.result;
 }
@@ -61,7 +61,9 @@ export async function r2ListObjects(env, bucket) {
 
 /** 挂自定义域（API 挂载默认 enabled=false，必须显式开启） */
 export async function r2AttachDomain(env, bucket, fqdn, zoneName) {
-    await r2Api(env, 'POST', `/buckets/${bucket}/domains/custom`, { domain: fqdn, zoneId: env.CF_ZONE_ID, zoneName });
+    // 注意：挂载用弃用端点 /custom_domains（camelCase body 实测可用）；
+    // 新端点 /domains/custom 的 POST 请求体格式不同（10040），勿混用
+    await r2Api(env, 'POST', `/buckets/${bucket}/custom_domains`, { domain: fqdn, zoneId: env.CF_ZONE_ID, zoneName });
     await r2Api(env, 'PUT', `/buckets/${bucket}/domains/custom/${fqdn}`, { enabled: true });
 }
 
@@ -70,7 +72,7 @@ export async function r2SetDomainEnabled(env, bucket, fqdn, enabled) {
 }
 
 export async function r2DetachDomain(env, bucket, fqdn) {
-    await r2Api(env, 'DELETE', `/buckets/${bucket}/domains/custom/${fqdn}`);
+    await r2Api(env, 'DELETE', `/buckets/${bucket}/custom_domains/${fqdn}`);
 }
 
 export async function r2CreateBucket(env, bucket) {

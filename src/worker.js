@@ -811,6 +811,7 @@ async function domainUploadCommonChecks(db, env, me, body, file) {
 }
 
 async function handleDomainUpload(request, env, db, me) {
+    await ensureTables(db);
     // 上传模式暂未开放：仅管理员可先内测
     if (!isStaff(me)) return freason('FORBIDDEN', 403, 'not_released', 'upload mode is not released yet');
     const b = await request.formData().catch(() => null);
@@ -825,11 +826,19 @@ async function handleDomainUpload(request, env, db, me) {
     if (!env.CF_DNS_TOKEN || !env.R2_ACCOUNT_ID) return freason('UNCONFIGURED', 503, 'not_configured', 'hosted domains not configured (CF_DNS_TOKEN / R2_ACCOUNT_ID missing)');
     const quotaErr = await domainUploadCommonChecks(db, env, me, body, file);
     if (quotaErr) return quotaErr;
-    const extracted = await extractZip(await file.arrayBuffer()).catch(e => freason('VALIDATION', 400, e.reason || 'zip_bad', e.message));
-    if (extracted.error) return extracted;
+    let extracted;
+    try {
+        extracted = await extractZip(await file.arrayBuffer());
+    } catch (e) {
+        return freason('VALIDATION', 400, e.reason || 'zip_bad', e.message);
+    }
+
 
     const fqdn = domainFqdn(body.label);
     const bucket = ('ep-' + body.label.slice(0, 58)).toLowerCase();
+    // 与 JSON 流同语义：每模块第 1 个直接生效，第 2 个起需管理员审核
+    const needsReview = modCnt >= 1 && !isStaff(me);
+    const status = needsReview ? 'reviewing' : 'active';
     let rawTotal = 0;
     try {
         await r2CreateBucket(env, bucket);
@@ -844,12 +853,19 @@ async function handleDomainUpload(request, env, db, me) {
         try { await r2DeleteBucket(env, bucket); } catch (e2) { /* 尽力 */ }
         return freason('UPSTREAM', 502, e.reason || 'upstream_fail', String(e.message || e).slice(0, 200));
     }
-    await db.prepare("INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, r2_bucket, r2_bytes, verify_code, version, status, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,'upload',?6,?7,'',1,'active',?8,?8)")
-        .bind(fqdn, body.label, me.uid, body.module_name, body.module_type, bucket, rawTotal, now()).run();
+    await db.prepare("INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, r2_bucket, r2_bytes, verify_code, version, review, status, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,'upload',?6,?7,'',1,?8,?9,?10,?10)")
+        .bind(fqdn, body.label, me.uid, body.module_name, body.module_type, bucket, rawTotal, needsReview ? 1 : 0, status, now()).run();
     await audit(db, me.uid, 'domain.apply', fqdn, 'upload');
-    notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
-        '你上传的静态站点已部署，现在可以通过 https://' + fqdn + ' 访问。',
-        'Your uploaded static site is now live at https://' + fqdn + '.');
+    notifyDomainEvent(env, db, me.uid,
+        status === 'reviewing'
+            ? '[ErisPulse] 托管域名待管理员审核 / Domain pending review: ' + fqdn
+            : '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
+        status === 'reviewing'
+            ? '你上传的静态站点已受理，因该模块已有域名在用，需管理员审核后生效。'
+            : '你上传的静态站点已部署，现在可以通过 https://' + fqdn + ' 访问。',
+        status === 'reviewing'
+            ? 'Your uploaded static site was received and awaits admin approval (this module already has a domain).'
+            : 'Your uploaded static site is now live at https://' + fqdn + '.');
     return json({ ok: true, fqdn, status: 'active', files: extracted.length, bytes: rawTotal });
 }
 
@@ -1726,6 +1742,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 if (row.mode !== 'upload' || !row.r2_bucket) return freason('VALIDATION', 400, 'bad_mode', 'reupload applies to uploaded sites only');
                 if (row.uid !== me.uid && !isStaff(me)) return freason('FORBIDDEN', 403, 'not_owner', 'only the owner can manage this domain');
                 if (row.status === 'disabled') return freason('FORBIDDEN', 403, 'disabled_domain', 'this domain has been disabled by an admin');
+                await ensureTables(db);
                 const b = await request.formData().catch(() => null);
                 if (!b) return freason('VALIDATION', 400, 'bad_form', 'multipart form required');
                 const totpErr = await requireTotp(db, me, { totp_code: String(b.get('totp_code') || '') });
@@ -1735,8 +1752,13 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 if (file.size > R2_MAX_ZIP) return freason('VALIDATION', 400, 'zip_size', 'zip must be ≤5MB');
                 const totalNow = await r2GetTotalBytes(db);
                 if (totalNow + R2_MAX_ZIP * 20 > R2_TOTAL_LIMIT) return freason('LIMIT', 429, 'storage_limit', 'global R2 storage budget reached');
-                const extracted = await extractZip(await file.arrayBuffer()).catch(e => freason('VALIDATION', 400, e.reason || 'zip_bad', e.message));
-                if (extracted.error) return extracted;
+                let extracted;
+                try {
+                    extracted = await extractZip(await file.arrayBuffer());
+                } catch (e) {
+                    return freason('VALIDATION', 400, e.reason || 'zip_bad', e.message);
+                }
+
                 const oldObjs = await r2ListObjects(env, row.r2_bucket);
                 let freed = 0;
                 for (const o of oldObjs) { await r2DeleteObject(env, row.r2_bucket, o.key); freed += o.size; }
