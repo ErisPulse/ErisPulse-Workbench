@@ -1230,7 +1230,7 @@ async function viewDomains(v) {
                 <div class="field"><label>${esc(dm('module'))} *</label><select id="dm-module"></select><div class="hint">${esc(dm('mineOnly'))}</div></div>
                 <div class="field"><label>${esc(dm('mode'))}</label><select id="dm-mode">
                     <option value="git">${esc(dm('modeGit'))}</option>
-                    ${/* 上传模式暂未开放：开放时恢复此行 <option value="upload">${esc(dm('modeUpload'))}</option> */ ''}
+                    ${staff() ? `<option value="upload">${esc(dm('modeUpload'))}</option>` : ''}
                     <option value="redirect">${esc(dm('modeRedirect'))}</option>
                     <option value="dns">${esc(dm('modeDns'))}</option>
                 </select><div class="hint" id="dm-mode-hint"></div></div>
