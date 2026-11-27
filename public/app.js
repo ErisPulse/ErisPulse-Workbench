@@ -71,7 +71,7 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
             label: '域名前缀', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '仓库平台', hintSelfHost: '自建实例需公网可经 HTTPS 访问；GitHub/Codeberg 会自动识别',
             repo: '仓库地址', branch: '分支', target: '跳转目标（https://）', dnsType: '记录类型', dnsValue: '记录值',
-            rLabelInvalid: '前缀仅限小写字母、数字与中缀连字符', rLabelReserved: '该前缀为保留名', rLabelTaken: '该前缀已被占用', rLimitModule: '该模块的域名数已达上限', rLimitUser: '该账户的域名数已达上限', rNotOwner: '仅模块所有者可操作', rBadRepo: '仓库地址不合法', rBadBranch: '分支名不合法', rBadTarget: '跳转目标需为 https:// URL', rBadDnsValue: '记录值不合法', rVerifyFailed: '验证未通过', rDisabled: '该域名已被停用', rZipSize: 'zip 需 ≤5MB', rZipBad: 'zip 包无法解析', rStorage: '平台存储预算已达上限',
+            rLabelInvalid: '前缀仅限小写字母、数字与中缀连字符', rLabelReserved: '该前缀为保留名', rLabelTaken: '该前缀已被占用', rLimitModule: '该模块的域名数已达上限', rLimitUser: '该账户的域名数已达上限', rNotOwner: '仅模块所有者可操作', rBadRepo: '仓库地址不合法', rBadBranch: '分支名不合法', rBadTarget: '跳转目标需为 https:// URL', rBadDnsValue: '记录值不合法', rVerifyFailed: '验证未通过', rDisabled: '该域名已被停用', rZipSize: 'zip 需 ≤5MB', rZipBad: 'zip 包无法解析', rNoIndex: 'zip 根目录需含 index.html', rStorage: '平台存储预算已达上限',
             submit: '提交申请', list: '我的域名', empty: '还没有托管域名',
             stVerifying: '待验证', stActive: '生效中', stPaused: '已暂停', stDisabled: '已停用',
             verify: '验证', pause: '暂停', resume: '恢复',
@@ -155,7 +155,7 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
             label: '網域前綴', labelAvail: (f) => `plugin-${f}.erisdev.com 可用`,
             platform: '儲存庫平台', hintSelfHost: '自建實例需公網可經 HTTPS 存取；GitHub/Codeberg 會自動識別',
             repo: '儲存庫位址', branch: '分支', target: '轉址目標（https://）', dnsType: '記錄類型', dnsValue: '記錄值',
-            rLabelInvalid: '前綴僅限小寫字母、數字與中綴連字號', rLabelReserved: '該前綴為保留名', rLabelTaken: '該前綴已被占用', rLimitModule: '該模組的網域數已達上限', rLimitUser: '該帳戶的網域數已達上限', rNotOwner: '僅模組所有者可操作', rBadRepo: '儲存庫位址不合法', rBadBranch: '分支名不合法', rBadTarget: '轉址目標需為 https:// URL', rBadDnsValue: '記錄值不合法', rVerifyFailed: '驗證未通過', rDisabled: '該網域已被停用', rZipSize: 'zip 需 ≤5MB', rZipBad: 'zip 包無法解析', rStorage: '平台存儲預算已達上限',
+            rLabelInvalid: '前綴僅限小寫字母、數字與中綴連字號', rLabelReserved: '該前綴為保留名', rLabelTaken: '該前綴已被占用', rLimitModule: '該模組的網域數已達上限', rLimitUser: '該帳戶的網域數已達上限', rNotOwner: '僅模組所有者可操作', rBadRepo: '儲存庫位址不合法', rBadBranch: '分支名不合法', rBadTarget: '轉址目標需為 https:// URL', rBadDnsValue: '記錄值不合法', rVerifyFailed: '驗證未通過', rDisabled: '該網域已被停用', rZipSize: 'zip 需 ≤5MB', rZipBad: 'zip 包無法解析', rNoIndex: 'zip 根目錄需含 index.html', rStorage: '平台存儲預算已達上限',
             submit: '提交申請', list: '我的網域', empty: '還沒有託管網域',
             stVerifying: '待驗證', stActive: '生效中', stPaused: '已暫停', stDisabled: '已停用',
             verify: '驗證', pause: '暫停', resume: '恢復',
@@ -239,7 +239,7 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
             label: 'Domain Label', labelAvail: (f) => `plugin-${f}.erisdev.com is available`,
             platform: 'Repository Platform', hintSelfHost: 'Self-hosted instances must be publicly reachable over HTTPS; GitHub/Codeberg URLs are auto-detected',
             repo: 'Repository URL', branch: 'Branch', target: 'Redirect Target (https://)', dnsType: 'Record Type', dnsValue: 'Record Value',
-            rLabelInvalid: 'Label must be lowercase letters, digits and inner hyphens', rLabelReserved: 'This label is reserved', rLabelTaken: 'This label is already taken', rLimitModule: 'This module reached its domain limit', rLimitUser: 'This account reached its domain limit', rNotOwner: 'Only the module owner can do this', rBadRepo: 'Invalid repository URL', rBadBranch: 'Invalid branch name', rBadTarget: 'Target must be an https:// URL', rBadDnsValue: 'Invalid record value', rVerifyFailed: 'Verification failed', rDisabled: 'This domain has been disabled', rZipSize: 'zip must be ≤5MB', rZipBad: 'zip could not be parsed', rStorage: 'platform storage budget reached',
+            rLabelInvalid: 'Label must be lowercase letters, digits and inner hyphens', rLabelReserved: 'This label is reserved', rLabelTaken: 'This label is already taken', rLimitModule: 'This module reached its domain limit', rLimitUser: 'This account reached its domain limit', rNotOwner: 'Only the module owner can do this', rBadRepo: 'Invalid repository URL', rBadBranch: 'Invalid branch name', rBadTarget: 'Target must be an https:// URL', rBadDnsValue: 'Invalid record value', rVerifyFailed: 'Verification failed', rDisabled: 'This domain has been disabled', rZipSize: 'zip must be ≤5MB', rZipBad: 'zip could not be parsed', rNoIndex: 'zip must contain index.html at its root', rStorage: 'platform storage budget reached',
             submit: 'Submit Request', list: 'My Domains', empty: 'No hosted domains yet',
             stVerifying: 'Verifying', stActive: 'Active', stPaused: 'Paused', stDisabled: 'Disabled',
             verify: 'Verify', pause: 'Pause', resume: 'Resume',
@@ -323,7 +323,7 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
             label: 'ドメインプレフィックス', labelAvail: (f) => `plugin-${f}.erisdev.com は利用可能`,
             platform: 'リポジトリプラットフォーム', hintSelfHost: '自前インスタンスは HTTPS で公開到達可能である必要があります。GitHub/Codeberg は自動判別',
             repo: 'リポジトリ URL', branch: 'ブランチ', target: '転送先（https://）', dnsType: 'レコード種別', dnsValue: 'レコード値',
-            rLabelInvalid: 'プレフィックスは小文字英字・数字・内部ハイフンのみ', rLabelReserved: 'このプレフィックスは予約済み', rLabelTaken: 'このプレフィックスは使用中', rLimitModule: 'このモジュールのドメイン数が上限に達しました', rLimitUser: 'このアカウントのドメイン数が上限に達しました', rNotOwner: 'モジュールの所有者のみ操作できます', rBadRepo: 'リポジトリ URL が不正です', rBadBranch: 'ブランチ名が不正です', rBadTarget: '転送先は https:// URL を指定してください', rBadDnsValue: 'レコード値が不正です', rVerifyFailed: '検証に失敗しました', rDisabled: 'このドメインは停止されています', rZipSize: 'zip は 5MB 以下', rZipBad: 'zip を解析できません', rStorage: 'プラットフォームの保存上限に達しました',
+            rLabelInvalid: 'プレフィックスは小文字英字・数字・内部ハイフンのみ', rLabelReserved: 'このプレフィックスは予約済み', rLabelTaken: 'このプレフィックスは使用中', rLimitModule: 'このモジュールのドメイン数が上限に達しました', rLimitUser: 'このアカウントのドメイン数が上限に達しました', rNotOwner: 'モジュールの所有者のみ操作できます', rBadRepo: 'リポジトリ URL が不正です', rBadBranch: 'ブランチ名が不正です', rBadTarget: '転送先は https:// URL を指定してください', rBadDnsValue: 'レコード値が不正です', rVerifyFailed: '検証に失敗しました', rDisabled: 'このドメインは停止されています', rZipSize: 'zip は 5MB 以下', rZipBad: 'zip を解析できません', rNoIndex: 'zip のルートに index.html が必要です', rStorage: 'プラットフォームの保存上限に達しました',
             submit: '申請を送信', list: 'マイドメイン', empty: 'ホストドメインはまだありません',
             stVerifying: '検証中', stActive: '有効', stPaused: '一時停止', stDisabled: '停止中',
             verify: '検証', pause: '一時停止', resume: '再開',
@@ -407,7 +407,7 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
             label: 'Метка домена', labelAvail: (f) => `plugin-${f}.erisdev.com доступен`,
             platform: 'Платформа репозитория', hintSelfHost: 'Собственные инстансы должны быть доступны по HTTPS из интернета; GitHub/Codeberg распознаются автоматически',
             repo: 'URL репозитория', branch: 'Ветка', target: 'Цель перенаправления (https://)', dnsType: 'Тип записи', dnsValue: 'Значение записи',
-            rLabelInvalid: 'Метка: строчные буквы, цифры и внутренние дефисы', rLabelReserved: 'Эта метка зарезервирована', rLabelTaken: 'Эта метка уже занята', rLimitModule: 'Лимит доменов для модуля исчерпан', rLimitUser: 'Лимит доменов для аккаунта исчерпан', rNotOwner: 'Доступно только владельцу модуля', rBadRepo: 'Неверный URL репозитория', rBadBranch: 'Неверное имя ветки', rBadTarget: 'Цель должна быть https:// URL', rBadDnsValue: 'Неверное значение записи', rVerifyFailed: 'Проверка не пройдена', rDisabled: 'Этот домен отключён', rZipSize: 'zip должен быть ≤5MB', rZipBad: 'не удалось разобрать zip', rStorage: 'бюджет хранилища платформы исчерпан',
+            rLabelInvalid: 'Метка: строчные буквы, цифры и внутренние дефисы', rLabelReserved: 'Эта метка зарезервирована', rLabelTaken: 'Эта метка уже занята', rLimitModule: 'Лимит доменов для модуля исчерпан', rLimitUser: 'Лимит доменов для аккаунта исчерпан', rNotOwner: 'Доступно только владельцу модуля', rBadRepo: 'Неверный URL репозитория', rBadBranch: 'Неверное имя ветки', rBadTarget: 'Цель должна быть https:// URL', rBadDnsValue: 'Неверное значение записи', rVerifyFailed: 'Проверка не пройдена', rDisabled: 'Этот домен отключён', rZipSize: 'zip должен быть ≤5MB', rZipBad: 'не удалось разобрать zip', rNoIndex: 'в корне zip должен быть index.html', rStorage: 'бюджет хранилища платформы исчерпан',
             submit: 'Отправить заявку', list: 'Мои домены', empty: 'Доменов пока нет',
             stVerifying: 'Ожидает проверки', stActive: 'Активен', stPaused: 'Приостановлен', stDisabled: 'Отключён',
             verify: 'Проверить', pause: 'Пауза', resume: 'Возобновить',
@@ -501,7 +501,7 @@ function toast(msg, err) {
     el.className = 'toast' + (err ? ' err' : '');
     el.textContent = msg;
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2600);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 260); }, 2300);
 }
 
 // 2FA 动态码弹窗：账户未开启时直接放行（resolve null）；取消则 resolve false
@@ -1026,10 +1026,10 @@ function renderShell(app) {
     </div>`;
 
     // renderShell 末尾已调 loadView，这里不再重复调用（避免双重表格竞态）
-    app.querySelectorAll('.nav-item').forEach(b => b.onclick = async () => { if (!(await confirmLeave())) return; S.view = b.dataset.view; S.modDetail = null; renderShell(app); });
+    app.querySelectorAll('.nav-item').forEach(b => b.onclick = async () => { if (!(await confirmLeave())) return; navTo(b.dataset.view); });
     $('#user-chip').onclick = (e) => { e.stopPropagation(); $('#user-menu').classList.toggle('open'); };
     document.addEventListener('click', () => { const m = $('#user-menu'); if (m) m.classList.remove('open'); });
-    $('#user-menu').querySelector('[data-um="profile"]').onclick = () => { S.view = 'profile'; renderShell(app); };
+    $('#user-menu').querySelector('[data-um="profile"]').onclick = () => navTo('profile');
     $('#user-menu').querySelector('[data-um="logout"]').onclick = () => logout();
     $('#theme-btn').onclick = () => {
         const dark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1043,8 +1043,19 @@ function renderShell(app) {
     loadView();
 }
 
+/** 站内导航：只切内容区与高亮，不重建壳（侧栏/顶栏不闪变） */
+function navTo(view) {
+    S.view = view; S.modDetail = null;
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+    loadView();
+}
+
+let _lastView = null;
 function loadView() {
     const v = $('#view');
+    const viewChanged = _lastView !== S.view;
+    _lastView = S.view;
+    if (viewChanged) { v.classList.remove('view-in'); void v.offsetWidth; v.classList.add('view-in'); }
     ({ dash: viewDash, modules: viewModules, submit: viewSubmit, users: viewUsers, clients: viewClients, audit: viewAudit, profile: viewProfile, tokens: viewTokens, activity: viewActivity, claims: viewClaims, docs: viewDocs, domains: viewDomains }[S.view] || viewDash)(v);
 }
 
@@ -1073,13 +1084,13 @@ async function viewDash(v) {
             ['audit', 'nav.audit', I.audit, ''],
         ] : [],
     ];
-    v.querySelector('#dash-entries').innerHTML = entries.map(([view, label, icon, badge]) => `
-        <button class="entry-card" data-entry="${view}">
+    v.querySelector('#dash-entries').innerHTML = entries.map(([view, label, icon, badge], i) => `
+        <button class="entry-card" data-entry="${view}" style="--i:${i}">
             <span class="entry-ico">${icon}</span>
             <span class="entry-title">${esc(t(label))}${badge ? ` <em>${badge}</em>` : ''}</span>
             <span class="entry-arrow">${I.ext}</span>
         </button>`).join('');
-    v.querySelectorAll('[data-entry]').forEach(b => b.onclick = () => { S.view = b.dataset.entry; S.modDetail = null; render(); });
+    v.querySelectorAll('[data-entry]').forEach(b => b.onclick = () => navTo(b.dataset.entry));
 }
 
 // ═══ 模块列表（开放平台应用列表形态：搜索 + 筛选 + logo + 行操作）═══
@@ -1108,7 +1119,7 @@ async function viewModules(v) {
         </div>
         <div class="card" style="padding:0;overflow:hidden"><table id="mod-table"></table></div>`;
 
-    v.querySelector('#go-submit').onclick = () => { S.view = 'submit'; renderShell(v.closest('#app') ? $('#app') : v); render(); };
+    v.querySelector('#go-submit').onclick = () => navTo('submit');
     v.querySelectorAll('[data-filter]').forEach(b => b.onclick = () => { S.modFilter = b.dataset.filter; loadView(); });
     const qInput = v.querySelector('#mod-q');
     qInput.oninput = () => { S.modSearch = qInput.value; renderModRows(v); };
@@ -1221,7 +1232,7 @@ function renderModRows(v) {
 async function viewDomains(v) {
     const dm = k => t('dm.' + k);
     // API 返回机读 reason（蛇形键）→ 前端查 i18n 字典，缺失时回退英文 message
-    const DM_REASON_MAP = { label_invalid: 'rLabelInvalid', label_reserved: 'rLabelReserved', label_taken: 'rLabelTaken', limit_module: 'rLimitModule', limit_user: 'rLimitUser', not_owner: 'rNotOwner', bad_repo: 'rBadRepo', bad_branch: 'rBadBranch', bad_target: 'rBadTarget', bad_dns_value: 'rBadDnsValue', verify_failed: 'rVerifyFailed', disabled_domain: 'rDisabled', zip_size: 'rZipSize', zip_bad: 'rZipBad', storage_limit: 'rStorage' };
+    const DM_REASON_MAP = { label_invalid: 'rLabelInvalid', label_reserved: 'rLabelReserved', label_taken: 'rLabelTaken', limit_module: 'rLimitModule', limit_user: 'rLimitUser', not_owner: 'rNotOwner', bad_repo: 'rBadRepo', bad_branch: 'rBadBranch', bad_target: 'rBadTarget', bad_dns_value: 'rBadDnsValue', verify_failed: 'rVerifyFailed', disabled_domain: 'rDisabled', zip_size: 'rZipSize', zip_bad: 'rZipBad', no_index: 'rNoIndex', storage_limit: 'rStorage' };
     const dmErr = (d, fb) => { const v = d && d.reason && DM_REASON_MAP[d.reason] && t('dm.' + DM_REASON_MAP[d.reason]); return (v && v !== 'dm.' + DM_REASON_MAP[d.reason]) ? v : (d.message || d.error || fb); };
     v.innerHTML = `<div class="page-title">${esc(t('nav.domains'))}</div><div class="page-desc">${esc(dm('desc'))}</div>
         <div class="card" style="max-width:860px">
