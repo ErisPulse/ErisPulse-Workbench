@@ -645,7 +645,7 @@ tr:hover td { background: var(--accent-soft); }
 .tf-qr-hint { margin: 0 0 14px; font-size: 12px; color: var(--tx-t); text-align: center; }
 
 /* ── 自建下拉（nselect）：替换原生 select，弹层挂 body 不受容器裁剪 ── */
-select.ns-src { display: none !important; }
+select { display: none !important; }
 .nselect { display: inline-flex; width: 100%; position: relative; }
 .nselect.mini { width: auto; }
 .nselect-btn {

@@ -890,6 +890,7 @@ export default {
                         ['GET', '/api/modules', '支持 ?q= 模糊搜索 / ?name= / ?type= / ?verified='],
                         ['GET', '/api/modules/stats'], ['GET', '/api/userinfo', 'OAuth token'],
                         ['GET', '/api/avatar/:uid'],
+                        ['GET', '/api/public/domains', 'active hosted domains per module (?module=, public display)'],
                     ],
                     authed: [
                         ['GET', '/api/me'], ['PATCH', '/api/me'],
@@ -1143,6 +1144,18 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 return new Response(Uint8Array.from(atob(u.avatar_blob), c => c.charCodeAt(0)), {
                     headers: { 'Content-Type': u.avatar_mime || 'image/webp', 'Cache-Control': 'public, max-age=600' },
                 });
+            }
+
+            // ── 公开：模块托管域名（仅 active；市场/生态展示用，无需登录）──
+            if (path === '/api/public/domains' && method === 'GET') {
+                await ensureTables(db);
+                const mod = url.searchParams.get('module') || '';
+                let sql = "SELECT fqdn, label, module_name, module_type FROM module_domains WHERE status = 'active'";
+                if (mod) sql += ' AND module_name = ?1';
+                sql += ' LIMIT 100';
+                const q = mod ? db.prepare(sql).bind(mod) : db.prepare(sql);
+                const rows = await q.all();
+                return json({ domains: rows.results });
             }
 
             // ═══ 以下需要登录 ═══

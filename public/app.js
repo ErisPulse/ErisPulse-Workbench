@@ -1307,6 +1307,20 @@ async function viewDomains(v) {
         if (pre.repo) $('#dm-repo').value = pre.repo;
     }
 
+    // ── 选择模块后自动填充仓库（平台/地址取模块登记 repository，分支默认 main）──
+    const fillRepoFromModule = () => {
+        const [type, name] = sel.value.split(':');
+        const m = myMods.find(x => x.type === type && x.name === name);
+        const parsed = m && m.repository ? parseRepo(m.repository) : null;
+        if (!parsed) return;
+        $('#dm-platform').value = parsed.host === 'github.com' ? 'github' : 'codeberg';
+        $('#dm-repo').value = 'https://' + parsed.host + '/' + parsed.owner + '/' + parsed.repo;
+        if (!$('#dm-branch').value.trim()) $('#dm-branch').value = 'main';
+        syncPlatform();
+        $('#dm-branch').dispatchEvent(new Event('input'));
+    };
+    sel.addEventListener('change', fillRepoFromModule);
+    fillRepoFromModule();
     // ── 模式切换：字段显隐 + 提示 ──
     const syncMode = () => {
         const mode = $('#dm-mode').value;
