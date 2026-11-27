@@ -43,6 +43,7 @@ const DOMAIN_LABEL_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
 const DOMAIN_BRANCH_RE = /^[A-Za-z0-9._\-/]{1,120}$/;
 const DOMAIN_LIMIT_PER_MODULE = 2;
 const DOMAIN_VERIFY_EXPIRE_DAYS = 7;            // 验证期上限：超时自动释放前缀供他人申请
+// 每模块第 1 个域名直接生效，第 2 个起进入审核（DOMAIN_LIMIT_PER_MODULE 仍为硬上限）
 const DOMAIN_LIMIT_PER_USER = 10;
 // 保留名：前缀已隔离官方子域，此表仅防易混淆命名
 const DOMAIN_RESERVED = new Set(['www', 'api', 'admin', 'mail', 'smtp', 'imap', 'pop', 'ns1', 'ns2',
@@ -564,6 +565,7 @@ async function ensureTables(db) {
     await db.prepare('ALTER TABLE module_domains ADD COLUMN route_id TEXT').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN r2_bucket TEXT').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN r2_bytes INTEGER').run().catch(() => {});
+    await db.prepare('ALTER TABLE module_domains ADD COLUMN review INTEGER').run().catch(() => {});
     // 插件域名流量预算表（护栏用，抽样计数）
     await db.prepare('CREATE TABLE IF NOT EXISTS domain_quota (day TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)').run().catch(() => {});
 }
@@ -834,6 +836,7 @@ async function handleDomainUpload(request, env, db, me) {
         await r2AttachDomain(env, bucket, fqdn, DOMAIN_BASE);
         for (const f of extracted) { await r2PutObject(env, bucket, f.name, f.bytes, mimeOf(f.name)); rawTotal += f.bytes.length; }
         await r2AddBytes(db, rawTotal);
+        if (status === 'reviewing') await r2SetDomainEnabled(env, bucket, fqdn, false);
     } catch (e) {
         // 半创建回滚：摘域/清桶/删桶
         try { await r2DetachDomain(env, bucket, fqdn); } catch (e2) { /* 尽力 */ }
@@ -1397,6 +1400,46 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     return json({ ok: true });
                 }
 
+                // 托管域名审核：approve 生效（dns 模式撤路由）；reject 清理全部资源并删行
+                let dmr = path.match(/^\/api\/admin\/domains\/([a-z0-9-]{1,63})\/(approve|reject)$/);
+                if (dmr && method === 'POST') {
+                    const row = await db.prepare('SELECT * FROM module_domains WHERE fqdn = ?1').bind(domainFqdn(dmr[1])).first();
+                    if (!row) return freason('NOT_FOUND', 404, 'domain_missing', 'domain not found');
+                    if (row.status !== 'reviewing') return freason('VALIDATION', 400, 'bad_state', 'domain is not pending review');
+                    if (dmr[2] === 'approve') {
+                        // dns 模式：生效即撤路由（流量直达源站）
+                        if (row.mode === 'dns' && row.route_id) {
+                            try { await cfRouteApi(env, 'DELETE', null, row.route_id); await db.prepare('UPDATE module_domains SET route_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run(); } catch (e) { /* 忽略 */ }
+                        }
+                        // upload 模式：开启公开访问
+                        if (row.mode === 'upload' && row.r2_bucket) {
+                            try { await r2SetDomainEnabled(env, row.r2_bucket, row.fqdn, true); } catch (e) { /* 忽略 */ }
+                        }
+                        await db.prepare("UPDATE module_domains SET status = 'active', updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                        await audit(db, me.uid, 'domain.approve', row.fqdn, row.uid);
+                        notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名已通过审核 / Domain approved: ' + row.fqdn,
+                            '你的模块「' + row.module_name + '」的托管域名已通过审核并生效，现在可以通过 https://' + row.fqdn + ' 访问。',
+                            'The hosted domain for your module "' + row.module_name + '" was approved and is now live at https://' + row.fqdn + '.');
+                        return json({ ok: true, status: 'active' });
+                    }
+                    // reject：按模式清理资源
+                    if (env.CF_DNS_TOKEN) {
+                        if (row.route_id) { try { await cfRouteApi(env, 'DELETE', null, row.route_id); } catch (e) { /* 忽略 */ } }
+                        if (row.dns_record_id) { try { await cfDnsApi(env, 'DELETE', null, row.dns_record_id); } catch (e) { /* 忽略 */ } }
+                    }
+                    if (row.mode === 'upload' && row.r2_bucket) {
+                        try { await r2DetachDomain(env, row.r2_bucket, row.fqdn); } catch (e) { /* 忽略 */ }
+                        try { await r2EmptyBucket(env, db, row.r2_bucket); } catch (e) { /* 忽略 */ }
+                        try { await r2DeleteBucket(env, row.r2_bucket); } catch (e) { /* 忽略 */ }
+                    }
+                    await db.prepare('DELETE FROM module_domains WHERE fqdn = ?1').bind(row.fqdn).run();
+                    await audit(db, me.uid, 'domain.reject', row.fqdn, row.uid);
+                    notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名未通过审核 / Domain rejected: ' + row.fqdn,
+                        '你的模块「' + row.module_name + '」申请的托管域名未通过审核，相关资源已回收。如需再次申请请调整后重新提交。',
+                        'The hosted domain request for your module "' + row.module_name + '" was rejected and its resources were released.');
+                    return json({ ok: true, status: 'rejected' });
+                }
+
                 // 托管域名处置：disable 立即下线；enable 恢复为 paused（所有者自行恢复）
                 let dma = path.match(/^\/api\/admin\/domains\/([a-z0-9-]{1,63})\/(disable|enable)$/);
                 if (dma && method === 'POST') {
@@ -1528,7 +1571,9 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
 
                 const fqdn = domainFqdn(label);
                 const verifyCode = randomHex(8);
-                let status = 'active';
+                // 每模块第 1 个直接生效；第 2 个起（非管理员）需管理员审核
+                const needsReview = modCnt >= 1 && !isStaff(me);
+                let status = needsReview ? 'reviewing' : 'active';
                 let verifyFile = '';
                 const vals = {
                     git_repo: '', git_host: '', git_base: '', git_branch: '', target_url: '',
@@ -1549,6 +1594,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         status = 'verifying';
                         verifyFile = 'erisdev-site-verify.txt';
                     }
+                    if (needsReview && status === 'active') status = 'reviewing';
                 } else if (mode === 'redirect') {
                     const t = String(b.target_url || '').trim();
                     if (!/^https:\/\/[^\s]{1,500}$/.test(t)) return freason('VALIDATION', 400, 'bad_target', 'target_url must be an https:// URL');
@@ -1603,9 +1649,9 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     return fail('UPSTREAM', 502, String(e.message || e).slice(0, 200));
                 }
 
-                await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, route_id, verify_code, version, status, created_at, updated_at)
-                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,1,?17,?18,?18)`)
-                    .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.route_id, vals.verify_code, status, now()).run();
+                await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, route_id, verify_code, version, review, status, created_at, updated_at)
+                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,1,?17,?18,?19,?19)`)
+                    .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.route_id, vals.verify_code, needsReview ? 1 : 0, status, now()).run();
                 await audit(db, me.uid, 'domain.apply', fqdn, mode);
                 if (status === 'active') {
                     notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
@@ -1640,16 +1686,22 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     ok = resp.ok && String(await resp.text()).trim() === row.verify_code;
                 } catch (e) { ok = false; }
                 if (!ok) return freason('VERIFY_FAILED', 400, 'verify_failed', 'verification file not found or content mismatched; check its location and content');
-                await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                const newStatus = row.review ? 'reviewing' : 'active';
+                await db.prepare('UPDATE module_domains SET status = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newStatus, now(), row.fqdn).run();
                 // dns 模式生效后撤销路由：流量此后直达源站，不再占 Worker
                 if (row.mode === 'dns' && row.route_id) {
                     try { await cfRouteApi(env, 'DELETE', null, row.route_id); await db.prepare('UPDATE module_domains SET route_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run(); } catch (e) { /* 路由残留无害，删除域名时再清 */ }
                 }
                 await audit(db, me.uid, 'domain.verify', row.fqdn, '');
-                notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + row.fqdn,
-                    '你的模块「' + row.module_name + '」托管域名验证通过并已生效，现在可以通过 https://' + row.fqdn + ' 访问。',
-                    'The hosted domain for your module "' + row.module_name + '" passed verification and is now live at https://' + row.fqdn + '.');
-                return json({ ok: true, status: 'active' });
+                notifyDomainEvent(env, db, row.uid,
+                    newStatus === 'reviewing'
+                        ? '[ErisPulse] 托管域名验证通过，待管理员审核 / Verified, pending review: ' + row.fqdn
+                        : '[ErisPulse] 托管域名已生效 / Domain active: ' + row.fqdn,
+                    '你的模块「' + row.module_name + '」托管域名验证通过' + (newStatus === 'reviewing' ? '，因该模块已有域名在用，需管理员审核后生效。' : '并已生效，现在可以通过 https://' + row.fqdn + ' 访问。'),
+                    newStatus === 'reviewing'
+                        ? 'Verification passed for module "' + row.module_name + '", but the domain needs admin approval because this module already has a domain.'
+                        : 'The hosted domain for your module "' + row.module_name + '" is now live at https://' + row.fqdn + '.');
+                return json({ ok: true, status: newStatus });
             }
 
             // 重传（upload 模式）：multipart zip，覆盖桶内容

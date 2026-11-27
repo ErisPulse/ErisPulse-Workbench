@@ -1459,8 +1459,8 @@ async function viewDomains(v) {
     });
     listEl.querySelectorAll('[data-dm-act="verify"]').forEach(b => b.onclick = () => busy(b, async () => {
         const d = await api('/api/domains/' + b.dataset.fqdn + '/verify', { method: 'POST', body: '{}' });
-        if (d.error) return toast(d.error === 'VERIFY_FAILED' ? dm('verifyFail') : (d.message || d.error), 1);
-        toast(dm('verifyOk'));
+        if (d.error) return toast(dmErr(d), 1);
+        toast(d.status === 'reviewing' ? t('clSubmitted') : dm('verifyOk'));
         reload();
     }));
     listEl.querySelectorAll('[data-dm-act="pause"]').forEach(b => b.onclick = async () => {

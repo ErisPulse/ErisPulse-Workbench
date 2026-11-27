@@ -131,6 +131,7 @@ export async function handleDomainRequest(request, env, ctx) {
         if (row.status === 'disabled') return page('域名已被停用 · Disabled', '<p>该域名已被管理员停用。如认为存在误会，请联系 ErisPulse 团队。</p><p>This domain has been disabled by an admin. Contact the ErisPulse team if you believe this is a mistake.</p>', 403);
         if (row.status === 'paused') return page('域名已暂停 · Paused', '<p>所有者已暂停该站点。</p><p>This site has been paused by its owner.</p>', 503);
         // 验证期只放行验证文件路径，其余拦截（未验证的源站内容不得对外暴露）
+        if (row.status === 'reviewing') return page('等待管理员审核 · Pending review', '<p>该模块已有域名在用，本次申请需管理员审核。</p><p>This module already has a domain — the new one awaits admin approval.</p>', 503);
         if (row.status === 'verifying') {
             if (url.pathname === '/.well-known/erisdev-verify.txt') return originFetch(request);
             return page('等待所有权验证 · Pending verification', '<p>该域名正在等待所有权验证。</p><p>在 workbench.erisdev.com「托管域名」页完成验证后即可访问。</p><p>Ownership verification is pending — the site goes live once verified on the Hosted Domains page at workbench.erisdev.com.</p>', 503);
