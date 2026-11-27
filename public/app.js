@@ -1590,9 +1590,7 @@ function viewModuleDetail(v) {
     if (domBtn) domBtn.onclick = async () => {
         if (!(await confirmLeave())) return;
         S.domApply = { name: m.name, type: m.type, repo: m.repository || '' };
-        S.modDetail = null;
-        S.view = 'domains';
-        render();
+        navTo('domains');
     };
     const verifyBtn = $('#md-verify');
     if (verifyBtn) verifyBtn.onclick = async () => {
@@ -1804,7 +1802,7 @@ function viewSubmit(v) {
     desc.addEventListener('input', updCount);
     v.querySelectorAll('[data-lg]').forEach(b => b.onclick = () => { b.classList.toggle('active'); markDirty(); });
 
-    $('#sb-cancel').onclick = async () => { if (!(await confirmLeave())) return; S.view = 'modules'; render(); };
+    $('#sb-cancel').onclick = async () => { if (!(await confirmLeave())) return; navTo('modules'); };
     $('#sb-logo-file').onchange = async (e) => {
         const f = e.target.files[0];
         if (!f) return;
@@ -1849,7 +1847,7 @@ function viewSubmit(v) {
         if (d.error) return toast(dmErr(d), 1);
         clearDirty();
         toast(t('submitOk'));
-        S.view = 'modules'; render();
+        navTo('modules');
     });
     niceSelectify(v);
     refreshPreview();
