@@ -800,17 +800,25 @@ async function domainUploadCommonChecks(db, env, me, body, file) {
         if (!uids.has(info.submitted_by_uid || '')) return freason('FORBIDDEN', 403, 'not_owner', 'only the module owner can request a hosted domain');
     }
     const modCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE module_name = ?1 AND module_type = ?2').bind(body.module_name, body.module_type).first()).n;
-    if (modCnt >= DOMAIN_LIMIT_PER_MODULE) return freason('LIMIT', 429, 'limit_module', 'module domain limit reached (' + DOMAIN_LIMIT_PER_MODULE + ')');
+    if (modCnt >= DOMAIN_LIMIT_PER_MODULE) return { err: freason('LIMIT', 429, 'limit_module', 'module domain limit reached (' + DOMAIN_LIMIT_PER_MODULE + ')') };
     const userCnt = (await db.prepare('SELECT COUNT(*) AS n FROM module_domains WHERE uid = ?1').bind(me.uid).first()).n;
-    if (userCnt >= DOMAIN_LIMIT_PER_USER) return freason('LIMIT', 429, 'limit_user', 'account domain limit reached (' + DOMAIN_LIMIT_PER_USER + ')');
-    if (!file || typeof file === 'string') return freason('VALIDATION', 400, 'zip_bad', 'zip file field missing');
-    if (file.size > R2_MAX_ZIP) return freason('VALIDATION', 400, 'zip_size', 'zip must be ≤5MB');
+    if (userCnt >= DOMAIN_LIMIT_PER_USER) return { err: freason('LIMIT', 429, 'limit_user', 'account domain limit reached (' + DOMAIN_LIMIT_PER_USER + ')') };
+    if (!file || typeof file === 'string') return { err: freason('VALIDATION', 400, 'zip_bad', 'zip file field missing') };
+    if (file.size > R2_MAX_ZIP) return { err: freason('VALIDATION', 400, 'zip_size', 'zip must be ≤5MB') };
     const totalNow = await r2GetTotalBytes(db);
-    if (totalNow + R2_MAX_ZIP * 20 > R2_TOTAL_LIMIT) return freason('LIMIT', 429, 'storage_limit', 'global R2 storage budget reached');
-    return null;
+    if (totalNow + R2_MAX_ZIP * 20 > R2_TOTAL_LIMIT) return { err: freason('LIMIT', 429, 'storage_limit', 'global R2 storage budget reached') };
+    return { modCnt };
 }
 
 async function handleDomainUpload(request, env, db, me) {
+    try {
+        return await handleDomainUploadInner(request, env, db, me);
+    } catch (e) {
+        return freason('ERROR', 500, 'upload_error', (e && e.stack || String(e)).slice(0, 400));
+    }
+}
+
+async function handleDomainUploadInner(request, env, db, me) {
     await ensureTables(db);
     // 上传模式暂未开放：仅管理员可先内测
     if (!isStaff(me)) return freason('FORBIDDEN', 403, 'not_released', 'upload mode is not released yet');
@@ -824,8 +832,8 @@ async function handleDomainUpload(request, env, db, me) {
     const totpErr = await requireTotp(db, me, body);
     if (totpErr) return totpErr;
     if (!env.CF_DNS_TOKEN || !env.R2_ACCOUNT_ID) return freason('UNCONFIGURED', 503, 'not_configured', 'hosted domains not configured (CF_DNS_TOKEN / R2_ACCOUNT_ID missing)');
-    const quotaErr = await domainUploadCommonChecks(db, env, me, body, file);
-    if (quotaErr) return quotaErr;
+    const check = await domainUploadCommonChecks(db, env, me, body, file);
+    if (check.err) return check.err;
     let extracted;
     try {
         extracted = await extractZip(await file.arrayBuffer());
@@ -837,7 +845,7 @@ async function handleDomainUpload(request, env, db, me) {
     const fqdn = domainFqdn(body.label);
     const bucket = ('ep-' + body.label.slice(0, 58)).toLowerCase();
     // 与 JSON 流同语义：每模块第 1 个直接生效，第 2 个起需管理员审核
-    const needsReview = modCnt >= 1 && !isStaff(me);
+    const needsReview = check.modCnt >= 1 && !isStaff(me);
     const status = needsReview ? 'reviewing' : 'active';
     let rawTotal = 0;
     try {
