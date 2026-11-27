@@ -438,6 +438,16 @@ async function cfRouteApi(env, method, body, routeId) {
     return d.result;
 }
 
+/** 清扫指定 fqdn 的残留 Workers 路由（upload 模式不走 Worker；label 重用时旧 git 路由会截流致站点不可达） */
+async function cfSweepStaleRoute(env, fqdn) {
+    if (!env.CF_DNS_TOKEN || !env.CF_ZONE_ID) return;
+    try {
+        const routes = await cfRouteApi(env, 'GET') || [];
+        const hit = routes.find(r => r.pattern === fqdn + '/*');
+        if (hit) await cfRouteApi(env, 'DELETE', null, hit.id);
+    } catch (e) { /* 清扫失败不影响主流程（真有残留时站点页会给可读错误） */ }
+}
+
 /** 域名状态变更邮件（中英双语；静默失败，不影响主流程） */
 async function notifyDomainEvent(env, db, uid, subject, textZh, textEn) {
     try {
@@ -840,10 +850,14 @@ async function handleDomainUploadInner(request, env, db, me) {
     } catch (e) {
         return freason('VALIDATION', 400, e.reason || 'zip_bad', e.message);
     }
+    // 站点根必须有 index.html：提前拦截，避免部署后 404 才发现
+    if (!extracted.some(f => f.name === 'index.html')) return freason('VALIDATION', 400, 'no_index', 'zip must contain index.html at its root');
 
 
     const fqdn = domainFqdn(body.label);
     const bucket = ('ep-' + body.label.slice(0, 58)).toLowerCase();
+    // upload 模式不走 Worker（R2 自定义域直服务）：清掉同名残留路由，防 label 重用时旧 git 路由截流
+    await cfSweepStaleRoute(env, fqdn);
     // 与 JSON 流同语义：每模块第 1 个直接生效，第 2 个起需管理员审核
     const needsReview = check.modCnt >= 1 && !isStaff(me);
     const status = needsReview ? 'reviewing' : 'active';
@@ -1766,6 +1780,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 } catch (e) {
                     return freason('VALIDATION', 400, e.reason || 'zip_bad', e.message);
                 }
+                if (!extracted.some(f => f.name === 'index.html')) return freason('VALIDATION', 400, 'no_index', 'zip must contain index.html at its root');
 
                 const oldObjs = await r2ListObjects(env, row.r2_bucket);
                 let freed = 0;
