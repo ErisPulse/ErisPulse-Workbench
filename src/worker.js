@@ -600,6 +600,11 @@ function opTargetMet(packages, op) {
         if (Array.isArray(ed.tags) && JSON.stringify(entry.tags || []) !== JSON.stringify(ed.tags)) return false;
         if (ed.verified !== undefined && (entry.verified !== false) !== !!ed.verified) return false;
         if (typeof ed.logo === 'string' && ed.logo && String(entry.logo || '') !== ed.logo) return false;
+        // 托管域名：写入时快照须等于目标值；清空（下线）时快照须已无该字段
+        if (typeof ed.erisdev_site === 'string') {
+            const current = String(entry.erisdev_site || '');
+            if (ed.erisdev_site ? current !== ed.erisdev_site : current !== '') return false;
+        }
         return true;
     }
     return true;
@@ -706,6 +711,44 @@ function scheduleSync(env, ctx, me, ops) {
     })());
 }
 
+/**
+ * 把托管域名状态同步到模块存根的 erisdev_site 字段：
+ * active 写入 https://<fqdn>，其余状态（paused / disabled / 已删除）清空。
+ * 模块不在索引中时跳过；下发失败不影响域名主流程。
+ */
+async function syncModuleSite(env, ctx, db, row) {
+    if (!env.MODULE_REPO_TOKEN || !row || !row.module_name || !row.module_type) return;
+    // 一个模块可有多个域名：本域名下线时，同模块若仍有其它生效域名则改指向它，否则清空
+    let site = '';
+    if (row.status === 'active' && row.fqdn) {
+        site = 'https://' + row.fqdn;
+    } else {
+        const other = await db.prepare("SELECT fqdn FROM module_domains WHERE module_name = ?1 AND module_type = ?2 AND status = 'active' AND fqdn != ?3 ORDER BY created_at ASC LIMIT 1")
+            .bind(row.module_name, row.module_type, row.fqdn || '').first();
+        if (other) site = 'https://' + other.fqdn;
+    }
+    const editData = JSON.stringify({ erisdev_site: site });
+    // 同一模块已有相同目标的未结清 op 时不重复入队
+    const dup = await db.prepare("SELECT id FROM module_ops WHERE name = ?1 AND type = ?2 AND action = 'edit' AND status IN ('pending','stale') AND edit_data = ?3 ORDER BY id DESC LIMIT 1")
+        .bind(row.module_name, row.module_type, editData).first();
+    if (dup) return;
+    try {
+        const resp = await fetch('https://api.github.com/repos/ErisPulse/ErisPulse-ModuleRepo/dispatches', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + env.MODULE_REPO_TOKEN, Accept: 'application/vnd.github+json', 'User-Agent': 'ErisPulse-Workbench' },
+            body: JSON.stringify({ event_type: 'manage_module', client_payload: { items: [
+                // 域名归属在申请时已校验模块所有权，此处以平台身份下发
+                { action: 'edit', name: row.module_name, type: row.module_type, staff: 1, uids: [], edit_data: editData },
+            ] } }),
+        });
+        if (!resp.ok) return;
+        const targetUid = await ownerUidOf(db, row.module_type, row.module_name);
+        const r = await db.prepare("INSERT INTO module_ops (name, type, action, edit_data, owner_uid, target_uid, status, created_at) VALUES (?1,?2,'edit',?3,?4,?5,'pending',?6)")
+            .bind(row.module_name, row.module_type, editData, 'system', targetUid, now()).run();
+        scheduleSync(env, ctx, null, [{ id: r.meta.last_row_id }]);
+    } catch (e) { /* 下发失败不阻塞域名流程 */ }
+}
+
 async function listModules(env, request) {
     const db = env.DB;
     await ensureTables(db);
@@ -751,6 +794,10 @@ async function listModules(env, request) {
                 if (Array.isArray(ed.tags)) entry.tags = ed.tags;
                 if (Array.isArray(ed.i18n)) entry.i18n = ed.i18n;
                 if (ed.verified !== undefined) entry.verified = !!ed.verified;
+                if (typeof ed.erisdev_site === 'string') {
+                    if (ed.erisdev_site) entry.erisdev_site = ed.erisdev_site;
+                    else delete entry.erisdev_site;
+                }
                 if (ed.submitter_uid) { entry.submitted_by = ed.submitter_name || entry.submitted_by; entry.submitted_by_uid = ed.submitter_uid; }
             }
         } else if (op.action === 'verify') {
@@ -820,15 +867,15 @@ async function domainUploadCommonChecks(db, env, me, body, file) {
     return { modCnt };
 }
 
-async function handleDomainUpload(request, env, db, me) {
+async function handleDomainUpload(request, env, ctx, db, me) {
     try {
-        return await handleDomainUploadInner(request, env, db, me);
+        return await handleDomainUploadInner(request, env, ctx, db, me);
     } catch (e) {
         return freason('ERROR', 500, 'upload_error', (e && e.stack || String(e)).slice(0, 400));
     }
 }
 
-async function handleDomainUploadInner(request, env, db, me) {
+async function handleDomainUploadInner(request, env, ctx, db, me) {
     await ensureTables(db);
     // 上传模式暂未开放：仅管理员可先内测
     if (!isStaff(me)) return freason('FORBIDDEN', 403, 'not_released', 'upload mode is not released yet');
@@ -878,6 +925,7 @@ async function handleDomainUploadInner(request, env, db, me) {
     await db.prepare("INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, r2_bucket, r2_bytes, verify_code, version, review, status, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,'upload',?6,?7,'',1,?8,?9,?10,?10)")
         .bind(fqdn, body.label, me.uid, body.module_name, body.module_type, bucket, rawTotal, needsReview ? 1 : 0, status, now()).run();
     await audit(db, me.uid, 'domain.apply', fqdn, 'upload');
+    await syncModuleSite(env, ctx, db, { fqdn, module_name: body.module_name, module_type: body.module_type, status });
     notifyDomainEvent(env, db, me.uid,
         status === 'reviewing'
             ? '[ErisPulse] 托管域名待管理员审核 / Domain pending review: ' + fqdn
@@ -888,7 +936,7 @@ async function handleDomainUploadInner(request, env, db, me) {
         status === 'reviewing'
             ? 'Your uploaded static site was received and awaits admin approval (this module already has a domain).'
             : 'Your uploaded static site is now live at https://' + fqdn + '.');
-    return json({ ok: true, fqdn, status: 'active', files: extracted.length, bytes: rawTotal });
+    return json({ ok: true, fqdn, status, files: extracted.length, bytes: rawTotal });
 }
 
 // ═══════════════════════ 路由 ═══════════════════════
@@ -1468,6 +1516,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         }
                         await db.prepare("UPDATE module_domains SET status = 'active', updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
                         await audit(db, me.uid, 'domain.approve', row.fqdn, row.uid);
+                        await syncModuleSite(env, ctx, db, { ...row, status: 'active' });
                         notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名已通过审核 / Domain approved: ' + row.fqdn,
                             '你的模块「' + row.module_name + '」的托管域名已通过审核并生效，现在可以通过 https://' + row.fqdn + ' 访问。',
                             'The hosted domain for your module "' + row.module_name + '" was approved and is now live at https://' + row.fqdn + '.');
@@ -1508,6 +1557,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     }
                     await db.prepare('UPDATE module_domains SET status = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newStatus, now(), row.fqdn).run();
                     await audit(db, me.uid, 'domain.' + dma[2], row.fqdn, row.uid);
+                    await syncModuleSite(env, ctx, db, { ...row, status: newStatus });
                     if (dma[2] === 'disable') {
                         notifyDomainEvent(env, db, row.uid, '[ErisPulse] 托管域名已被停用 / Domain disabled: ' + row.fqdn,
                             '你的模块「' + row.module_name + '」托管域名已被管理员停用。如认为存在误会，请联系管理员。',
@@ -1593,7 +1643,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
             if (path === '/api/domains' && method === 'POST') {
                 // 上传模式走 multipart（zip 包），其余模式为 JSON
                 if ((request.headers.get('Content-Type') || '').includes('multipart/form-data')) {
-                    return handleDomainUpload(request, env, db, me);
+                    return handleDomainUpload(request, env, ctx, db, me);
                 }
                 const b = await request.json().catch(() => ({}));
                 const totpErr = await requireTotp(db, me, b);
@@ -1704,6 +1754,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,1,?17,?18,?19,?19)`)
                     .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.route_id, vals.verify_code, needsReview ? 1 : 0, status, now()).run();
                 await audit(db, me.uid, 'domain.apply', fqdn, mode);
+                await syncModuleSite(env, ctx, db, { fqdn, module_name: String(b.module_name), module_type: b.module_type, status });
                 if (status === 'active') {
                     notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
                         '你的模块「' + b.module_name + '」托管域名已生效，现在可以通过 https://' + fqdn + ' 访问。',
@@ -1744,6 +1795,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     try { await cfRouteApi(env, 'DELETE', null, row.route_id); await db.prepare('UPDATE module_domains SET route_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run(); } catch (e) { /* 路由残留无害，删除域名时再清 */ }
                 }
                 await audit(db, me.uid, 'domain.verify', row.fqdn, '');
+                await syncModuleSite(env, ctx, db, { ...row, status: newStatus });
                 notifyDomainEvent(env, db, row.uid,
                     newStatus === 'reviewing'
                         ? '[ErisPulse] 托管域名验证通过，待管理员审核 / Verified, pending review: ' + row.fqdn
@@ -1816,6 +1868,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         try { await r2SetDomainEnabled(env, row.r2_bucket, row.fqdn, false); } catch (e) { /* 忽略 */ }
                     }
                     await db.prepare("UPDATE module_domains SET status = 'paused', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                    await syncModuleSite(env, ctx, db, { ...row, status: 'paused' });
                 } else if (action === 'resume') {
                     if (row.status !== 'paused') return freason('VALIDATION', 400, 'bad_state', 'only paused domains can be resumed');
                     // dns 模式恢复：重建 DNS 记录
@@ -1832,6 +1885,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         try { await r2SetDomainEnabled(env, row.r2_bucket, row.fqdn, true); } catch (e) { /* 忽略 */ }
                     }
                     await db.prepare("UPDATE module_domains SET status = 'active', version = version + 1, updated_at = ?1 WHERE fqdn = ?2").bind(now(), row.fqdn).run();
+                    await syncModuleSite(env, ctx, db, { ...row, status: 'active' });
                 } else if (action === 'delete') {
                     // 撤路由 + 撤记录，均已不存在时忽略
                     if (env.CF_DNS_TOKEN) {
@@ -1844,6 +1898,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                         try { await r2DeleteBucket(env, row.r2_bucket); } catch (e) { /* 忽略 */ }
                     }
                     await db.prepare('DELETE FROM module_domains WHERE fqdn = ?1').bind(row.fqdn).run();
+                    await syncModuleSite(env, ctx, db, { ...row, status: 'deleted' });
                 } else if (action === 'update') {
                     if (row.status === 'disabled') return freason('FORBIDDEN', 403, 'disabled_domain', 'this domain has been disabled by an admin');
                     if (row.mode === 'git') {
