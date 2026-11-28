@@ -651,7 +651,7 @@ async function reconcilePending(env) {
         } else if (op.status === 'pending' && Date.now() - new Date(op.created_at).getTime() > 30 * 60 * 1000) {
             await db.prepare("UPDATE module_ops SET status='stale' WHERE id=?1").bind(op.id).run();
         } else if (op.status === 'stale' && Date.now() - new Date(op.created_at).getTime() > 24 * 3600 * 1000) {
-            // 超过 24 小时仍未生效：归档为 expired，不再出现在列表标记里
+            // 超过 24 小时仍未生效：归档为 expired，列表标记中不展示
             await db.prepare("UPDATE module_ops SET status='expired' WHERE id=?1").bind(op.id).run();
         }
     }
@@ -1846,7 +1846,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 if (!ok) return freason('VERIFY_FAILED', 400, 'verify_failed', 'verification file not found or content mismatched; check its location and content');
                 const newStatus = row.review ? 'reviewing' : 'active';
                 await db.prepare('UPDATE module_domains SET status = ?1, version = version + 1, updated_at = ?2 WHERE fqdn = ?3').bind(newStatus, now(), row.fqdn).run();
-                // dns 模式生效后撤销路由：流量此后直达源站，不再占 Worker
+                // dns 模式生效后撤销路由：流量此后直达源站
                 if (row.mode === 'dns' && row.route_id) {
                     try { await cfRouteApi(env, 'DELETE', null, row.route_id); await db.prepare('UPDATE module_domains SET route_id = ?1 WHERE fqdn = ?2').bind('', row.fqdn).run(); } catch (e) { /* 路由残留无害，删除域名时再清 */ }
                 }
@@ -2051,7 +2051,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 return json({ ok: true, count: opIds.length, syncing: true });
             }
 
-            // logo 校验：仅 https URL（图床地址，来源不限）。base64 内联数据会显著增大模块索引文件，不再接受
+            // logo 校验：仅 https URL（图床地址，来源不限）；不接受 base64 内联数据
             function checkLogo(logo) {
                 const v = String(logo || '');
                 if (!v) return null;
