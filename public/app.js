@@ -105,7 +105,7 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
         tkName: '權杖名稱', tkSkip2fa: '此權杖免動態碼（跳過 2FA）', tkSkip2faHint: '生成需當場驗證一次動態碼；之後 CLI/CI 呼叫敏感介面不再要求 totp_code', badgeNo2fa: '免2FA', tkCreate: '生成權杖', tkOnce: '權杖僅顯示一次，請立即保存', tkNone: '還沒有權杖', tkLast: '最後使用', tkCreated: '建立時間', tkRevoke: '撤銷', tkRevokeOk: '已撤銷', tkUsage: '開放 API / CLI（epsdk push）/ 外部工具鏈：請求頭 Authorization: Bearer epat_… 即等同你的登入態', tkCopied: '已複製',
         tkModalTitle: '權杖已生成', tkWarn: '完整權杖僅此一次顯示，請立即複製保存：',
         ecReleases: '最新發布', ecIssues: '近期 Issue', ecEmpty: '暫無資料',
-        clClaim: '認領此模組', clReason: '申請理由（說明你是該模組的開發者）', clSubmit: '提交認領', clPending: '認領審核中', clApprove: '通過', clReject: '駁回', clMy: '我的認領申請', clNone: '暫無申請',
+        clClaim: '認領此模組', clReason: '申請理由（說明你是該模組的開發者）', clSubmit: '提交認領', clSubmitted: '認領申請已提交，審核結果將透過郵件通知', clPending: '認領審核中', clApprove: '通過', clReject: '駁回', clMy: '我的認領申請', clNone: '暫無申請',
         dashDesc: '模組生態的驗證、角色與身分分發中心。',
         stat: { total: '生態模組', verified: '已驗證', unverified: '待驗證', users: '註冊使用者', release: '最新發布' },
         next: '接入指引', nextBody: '服務接入：在「接入應用」登記 client，用標準 OAuth 對接\n模組驗證：待驗證模組一鍵轉正\nCLI（規劃中）：epsdk build / epsdk push',
@@ -189,7 +189,7 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
         tkName: 'Token name', tkSkip2fa: 'Skip 2FA for this token', tkSkip2faHint: 'Creating it requires a live code once; afterwards CLI/CI calls to sensitive endpoints need no totp_code', badgeNo2fa: 'no-2FA', tkCreate: 'Generate Token', tkOnce: 'Shown only once — save it now', tkNone: 'No tokens yet', tkLast: 'Last used', tkCreated: 'Created', tkRevoke: 'Revoke', tkRevokeOk: 'Revoked', tkUsage: 'Open API / CLI (epsdk push) / external tools: header Authorization: Bearer epat_… acts as your session', tkCopied: 'Copied',
         tkModalTitle: 'Token created', tkWarn: 'The full token is shown only once — copy it now:',
         ecReleases: 'Releases', ecIssues: 'Recent Issues', ecEmpty: 'No data',
-        clClaim: 'Claim this module', clReason: 'Reason (prove you develop this module)', clSubmit: 'Submit Claim', clPending: 'Pending review', clApprove: 'Approve', clReject: 'Reject', clMy: 'My Claims', clNone: 'No claims',
+        clClaim: 'Claim this module', clReason: 'Reason (prove you develop this module)', clSubmit: 'Submit Claim', clSubmitted: 'Claim submitted. You will be notified by email once it is reviewed.', clPending: 'Pending review', clApprove: 'Approve', clReject: 'Reject', clMy: 'My Claims', clNone: 'No claims',
         dashDesc: 'Verification, roles and identity distribution for the module ecosystem.',
         stat: { total: 'Modules', verified: 'Verified', unverified: 'Unverified', users: 'Users', release: 'Latest Release' },
         next: 'Getting Started', nextBody: 'Connect services: register a client under "OAuth Clients"\nVerify modules in one click\nCLI (planned): epsdk build / epsdk push',
@@ -273,7 +273,7 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
         tkName: 'トークン名', tkSkip2fa: 'このトークンは 2FA 不要', tkSkip2faHint: '作成時に一度だけコードが必要。以後の CLI/CI からの重要操作は totp_code 不要', badgeNo2fa: '2FA不要', tkCreate: '生成', tkOnce: 'トークンは一度しか表示されません。今すぐ保存', tkNone: 'トークンはまだありません', tkLast: '最終使用', tkCreated: '作成日時', tkRevoke: '失効', tkRevokeOk: '失効しました', tkUsage: 'オープン API / CLI（epsdk push）/ 外部ツール：ヘッダー Authorization: Bearer epat_… でログイン状態と同等', tkCopied: 'コピーしました',
         tkModalTitle: 'トークンを生成しました', tkWarn: '完全なトークンは一度だけ表示されます。今すぐコピーしてください：',
         ecReleases: '最新リリース', ecIssues: '最近の Issue', ecEmpty: 'データなし',
-        clClaim: 'このモジュールを認定', clReason: '申請理由（開発者であることを説明）', clSubmit: '申請', clPending: '審査中', clApprove: '承認', clReject: '却下', clMy: '自分の申請', clNone: '申請なし',
+        clClaim: 'このモジュールを認定', clReason: '申請理由（開発者であることを説明）', clSubmit: '申請', clSubmitted: '引き取り申請を送信しました。審査結果はメールでお知らせします。', clPending: '審査中', clApprove: '承認', clReject: '却下', clMy: '自分の申請', clNone: '申請なし',
         dashDesc: 'モジュールエコシステムの検証・ロール・ID 配布センター。',
         stat: { total: 'モジュール', verified: '認証済み', unverified: '未認証', users: 'ユーザー', release: '最新リリース' },
         next: '始め方', nextBody: 'サービス接続：「接続アプリ」で client を登録\n未認証モジュールをワンクリック承認\nCLI（計画中）：epsdk build / epsdk push',
@@ -357,7 +357,7 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
         tkName: 'Название токена', tkSkip2fa: 'Токен без 2FA', tkSkip2faHint: 'При создании нужен один код; далее CLI/CI не требуют totp_code', badgeNo2fa: 'без 2FA', tkCreate: 'Создать токен', tkOnce: 'Показывается один раз — сохраните', tkNone: 'Токенов нет', tkLast: 'Последнее использование', tkCreated: 'Создан', tkRevoke: 'Отозвать', tkRevokeOk: 'Отозван', tkUsage: 'Открытый API / CLI (epsdk push) / внешние инструменты: заголовок Authorization: Bearer epat_… равен вашей сессии', tkCopied: 'Скопировано',
         tkModalTitle: 'Токен создан', tkWarn: 'Полный токен показывается один раз — скопируйте сейчас:',
         ecReleases: 'Релизы', ecIssues: 'Недавние issues', ecEmpty: 'Нет данных',
-        clClaim: 'Заявить права', clReason: 'Причина (докажите, что вы автор)', clSubmit: 'Подать заявку', clPending: 'На проверке', clApprove: 'Одобрить', clReject: 'Отклонить', clMy: 'Мои заявки', clNone: 'Заявок нет',
+        clClaim: 'Заявить права', clReason: 'Причина (докажите, что вы автор)', clSubmit: 'Подать заявку', clSubmitted: 'Заявка отправлена. Результат придёт на почту после проверки.', clPending: 'На проверке', clApprove: 'Одобрить', clReject: 'Отклонить', clMy: 'Мои заявки', clNone: 'Заявок нет',
         dashDesc: 'Центр верификации, ролей и идентификации экосистемы модулей.',
         stat: { total: 'Модулей', verified: 'Проверено', unverified: 'Не проверено', users: 'Пользователей', release: 'Релиз' },
         next: 'С чего начать', nextBody: 'Подключение сервисов: клиент в разделе «OAuth-клиенты»\nВерификация модулей в один клик\nCLI (в планах): epsdk build / epsdk push',
@@ -578,12 +578,17 @@ function uiConfirm(message) {
 }
 
 // ── 表单基建：按钮防重（disabled + 文案切换）──
+// fn 抛出的异常在控制台留痕并以 toast 提示，避免操作失败时界面无任何反馈
 async function busy(btn, fn) {
     if (!btn || btn.disabled) return;
     const orig = btn.textContent;
     btn.disabled = true;
     btn.textContent = (typeof t('submitting') === 'function') ? orig : (orig + '…');
     try { return await fn(); }
+    catch (e) {
+        console.error('[busy] 操作失败:', e);
+        toast((e && e.message) || String(e), 1);
+    }
     finally { btn.disabled = false; btn.textContent = orig; }
 }
 
@@ -1232,11 +1237,13 @@ function renderModRows(v) {
 }
 
 // ═══ 托管域名（plugin-<label>.erisdev.com：git 分支 / 重定向 / 自有服务器）═══
+// API 返回机读 reason（蛇形键）→ 前端查 i18n 字典，缺失时回退英文 message。
+// 模块/域名/令牌/应用等全部写操作的错误提示共用，须位于模块顶层。
+const DM_REASON_MAP = { label_invalid: 'rLabelInvalid', label_reserved: 'rLabelReserved', label_taken: 'rLabelTaken', limit_module: 'rLimitModule', limit_user: 'rLimitUser', not_owner: 'rNotOwner', bad_repo: 'rBadRepo', bad_branch: 'rBadBranch', bad_target: 'rBadTarget', bad_dns_value: 'rBadDnsValue', verify_failed: 'rVerifyFailed', disabled_domain: 'rDisabled', zip_size: 'rZipSize', zip_bad: 'rZipBad', no_index: 'rNoIndex', storage_limit: 'rStorage' };
+const dmErr = (d, fb) => { const v = d && d.reason && DM_REASON_MAP[d.reason] && t('dm.' + DM_REASON_MAP[d.reason]); return (v && v !== 'dm.' + DM_REASON_MAP[d.reason]) ? v : (d.message || d.error || fb); };
+
 async function viewDomains(v) {
     const dm = k => t('dm.' + k);
-    // API 返回机读 reason（蛇形键）→ 前端查 i18n 字典，缺失时回退英文 message
-    const DM_REASON_MAP = { label_invalid: 'rLabelInvalid', label_reserved: 'rLabelReserved', label_taken: 'rLabelTaken', limit_module: 'rLimitModule', limit_user: 'rLimitUser', not_owner: 'rNotOwner', bad_repo: 'rBadRepo', bad_branch: 'rBadBranch', bad_target: 'rBadTarget', bad_dns_value: 'rBadDnsValue', verify_failed: 'rVerifyFailed', disabled_domain: 'rDisabled', zip_size: 'rZipSize', zip_bad: 'rZipBad', no_index: 'rNoIndex', storage_limit: 'rStorage' };
-    const dmErr = (d, fb) => { const v = d && d.reason && DM_REASON_MAP[d.reason] && t('dm.' + DM_REASON_MAP[d.reason]); return (v && v !== 'dm.' + DM_REASON_MAP[d.reason]) ? v : (d.message || d.error || fb); };
     v.innerHTML = `<div class="page-title">${esc(t('nav.domains'))}</div><div class="page-desc">${esc(dm('desc'))}</div>
         <div class="card" style="max-width:860px">
             <h3>${esc(dm('apply'))}</h3>

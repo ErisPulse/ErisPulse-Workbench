@@ -187,8 +187,9 @@ body {
     padding: 26px 28px;
 }
 .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
-/* 隐藏但保留占位：标题与内容之间的呼吸感不因隐藏而丢失 */
-.page-desc { visibility: hidden; font-size: 12.5px; line-height: 1.5; margin-bottom: 18px; }
+/* 视图说明：位于标题下方 */
+.page-desc { font-size: 13px; line-height: 1.6; color: var(--tx-s); margin-bottom: 18px; }
+.page-desc:empty { display: none; }
 
 /* 统计瓦片（Dashboard stat-card 同款：图标软底方块 + 大数字） */
 .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 24px; }
