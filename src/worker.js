@@ -4,6 +4,7 @@
 
 
 import { R2_MAX_ZIP, R2_TOTAL_LIMIT, r2PutObject, r2DeleteObject, r2ListObjects, r2AttachDomain, r2SetDomainEnabled, r2DetachDomain, r2CreateBucket, r2DeleteBucket, r2AddBytes, r2GetTotalBytes, r2EmptyBucket, extractZip, mimeOf } from './r2.js';
+import { parseImageUpload, putImage } from './images.js';
 
 // ── OAuth 上游（作为客户端登录）──
 const OAUTH_UPSTREAM = {
@@ -35,6 +36,11 @@ const CODE_TTL_MS = 10 * 60 * 1000;
 const OAUTH_TOKEN_TTL_S = 30 * 86400;
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 const AVATAR_MAX = 1024 * 1024;
+
+// ── 图床（img.erisdev.com）：R2 桶 + 自定义域公开读；写入经下方 images 接口，强制 WebP ──
+const IMG_BUCKET = 'erispulse-img';
+const IMG_PUBLIC_BASE = 'https://img.erisdev.com';
+const LOGO_URL_MAX = 512;                           // 模块 logo 地址长度上限
 
 // ── 模块托管域名（plugin-<label>.erisdev.com 单层 + 固定前缀；TLS 由 *.erisdev.com 免费通配符覆盖）──
 const DOMAIN_PREFIX = 'plugin-';
@@ -980,6 +986,7 @@ export default {
                     ],
                     authed: [
                         ['GET', '/api/me'], ['PATCH', '/api/me'],
+                        ['POST', '/api/images', 'upload image (webp only) → public URL; {kind: logo|avatar, data_url, module_name?, module_type?}'],
                         ['POST', '/api/modules/submit', 'totp_code（2FA 宽限/免码令牌除外）'],
                         ['POST', '/api/modules/manage'], ['POST', '/api/modules/batch'],
                         ['GET', '/api/modules/ops', '?name=&type= 或缺省查自己'],
@@ -1581,6 +1588,51 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
             // 归属身份集合（数组形态，随 dispatch 下发）：同人 github:<id> 与 wb:<uid> 互通
             const myUidsJson = async () => JSON.stringify([...(await myUids())]);
 
+            // ── 图床上传：强制 WebP，落 R2 后返回公开地址。kind 决定对象前缀与权限 ──
+            //   logo         需为该模块所有者（或管理员），对象名 = 模块名
+            //   logo-pending 模块尚未进索引时的预上传，要求该名字未被占用
+            //   avatar       任意登录用户，对象名 = 自己的 uid
+            //   返回的地址由调用方写入模块 logo 字段
+            if (path === '/api/images' && method === 'POST') {
+                if (!env.CF_DNS_TOKEN || !env.R2_ACCOUNT_ID) return freason('UNCONFIGURED', 503, 'not_configured', 'image hosting not configured');
+                const b = await request.json().catch(() => ({}));
+                const kind = String(b.kind || '');
+                let objectName = '';
+                if (kind === 'logo') {
+                    const modName = String(b.module_name || ''), modType = String(b.module_type || 'module');
+                    if (!/^[A-Za-z0-9_-]+$/.test(modName) || !['module', 'adapter'].includes(modType)) return freason('VALIDATION', 400, 'bad_module', 'invalid module name or type');
+                    if (!isStaff(me)) {
+                        const cached = await getCachedPackages(db);
+                        const info = cached.packages ? containerOf(cached.packages, modType)[modName] : null;
+                        if (!info) return freason('NOT_FOUND', 404, 'module_missing', 'module not found');
+                        const uids = await myUids();
+                        if (!uids.has(info.submitted_by_uid || '')) return freason('FORBIDDEN', 403, 'not_owner', 'only the module owner can set its logo');
+                    }
+                    objectName = modName;
+                } else if (kind === 'logo-pending') {
+                    // 提交新模块时的预上传：模块尚未进索引。仅当该名字未被占用时放行，
+                    // 防止冒用他人模块名覆盖其 logo；未完成提交的残留对象在同名模块提交时被覆盖
+                    const modName = String(b.module_name || ''), modType = String(b.module_type || 'module');
+                    if (!/^[A-Za-z0-9_-]+$/.test(modName) || !['module', 'adapter'].includes(modType)) return freason('VALIDATION', 400, 'bad_module', 'invalid module name or type');
+                    const cached = await getCachedPackages(db);
+                    if (cached.packages && containerOf(cached.packages, modType)[modName]) return freason('CONFLICT', 409, 'module_exists', 'this module already exists; edit it to change its logo');
+                    objectName = modName;
+                } else if (kind === 'avatar') {
+                    objectName = me.uid;
+                } else {
+                    return freason('VALIDATION', 400, 'img_kind', 'kind must be logo, logo-pending or avatar');
+                }
+                let image;
+                try {
+                    image = parseImageUpload(b.data_url, kind);
+                } catch (e) {
+                    return freason('VALIDATION', 400, e.reason || 'img_bad', e.message);
+                }
+                const url = await putImage(env, IMG_BUCKET, IMG_PUBLIC_BASE, kind, objectName, image.bytes);
+                await audit(db, me.uid, 'image.upload', kind + '/' + objectName, String(image.bytes.length));
+                return json({ ok: true, url, width: image.width, height: image.height, bytes: image.bytes.length });
+            }
+
             if (path === '/api/modules' && method === 'GET') {
                 return await listModules(env, request);
             }
@@ -1995,12 +2047,12 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                 return json({ ok: true, count: opIds.length, syncing: true });
             }
 
-            // logo 校验：https URL 或 ≤100KB data:image
+            // logo 校验：仅 https URL（图床地址，来源不限）。base64 内联数据会显著增大模块索引文件，不再接受
             function checkLogo(logo) {
                 const v = String(logo || '');
                 if (!v) return null;
-                if (!(v.startsWith('https://') || v.startsWith('data:image/'))) return 'logo 需为 https URL 或 data:image URL';
-                if (v.startsWith('data:image/') && v.length > 140 * 1024) return 'logo 超过 100KB';
+                if (!v.startsWith('https://')) return 'logo 需为 https URL';
+                if (v.length > LOGO_URL_MAX) return 'logo URL 过长';
                 return null;
             }
 

@@ -1,6 +1,9 @@
 // ═══ i18n ═══
 const LOCALES = ['zh-CN', 'zh-TW', 'en', 'ja', 'ru'];
 const LANG_NAMES = { 'zh-CN': '简体中文', 'zh-TW': '繁體中文', en: 'English', ja: '日本語', ru: 'Русский' };
+// 与服务端 images.js 的 IMAGE_KINDS 对齐：超出上限的上传会被拒绝
+const IMG_LOGO_MAX_BYTES = 256 * 1024;
+const IMG_LOGO_MAX_SIDE = 256;
 
 function makeT() {
     const D = {
@@ -34,7 +37,7 @@ function makeT() {
         fName: '模块名', fPackage: 'PyPI 包名', fType: '类型', fDesc: '描述（多语言用 | 分隔）', fAuthor: '作者',
         fRepo: '仓库地址', fCategory: '分类', fTags: '标签（逗号分隔）', fI18n: '界面语言', fMinSdk: '最低 SDK 版本',
         fLogo: 'Logo', fLogoHint: '粘贴 https URL，或选择本地图片（自动压缩 ≤100KB，上架脚本会进一步处理）',
-        uploadLogo: '选择图片', logoPreview: '当前图标',
+        uploadLogo: '选择图片', logoUploading: '上传中…', logoNeedName: '请先填写模块名', logoPreview: '当前图标',
         submitModule: '提交模块', saveChanges: '保存修改', cancel: '取消',
         submitOk: '已提交，审核后上架', editOk: '修改已提交', dispatched: '已下发，稍后生效',
         cat: { 1: '工具', 2: '娱乐', 3: '管理', 4: '通知', 5: 'AI', 6: '平台对接', 7: '数据分析' },
@@ -118,7 +121,7 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
         fName: '模組名', fPackage: 'PyPI 包名', fType: '類型', fDesc: '描述（多語言用 | 分隔）', fAuthor: '作者',
         fRepo: '倉庫地址', fCategory: '分類', fTags: '標籤（逗號分隔）', fI18n: '界面語言', fMinSdk: '最低 SDK 版本',
         fLogo: 'Logo', fLogoHint: '貼上 https URL，或選擇本地圖片（自動壓縮 ≤100KB）',
-        uploadLogo: '選擇圖片', logoPreview: '當前圖示',
+        uploadLogo: '選擇圖片', logoUploading: '上傳中…', logoNeedName: '請先填寫模組名', logoPreview: '當前圖示',
         submitModule: '提交模組', saveChanges: '保存修改', cancel: '取消',
         submitOk: '已提交，審核後上架', editOk: '修改已提交', dispatched: '已下發，稍後生效',
         cat: { 1: '工具', 2: '娛樂', 3: '管理', 4: '通知', 5: 'AI', 6: '平台對接', 7: '數據分析' },
@@ -202,7 +205,7 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
         fName: 'Name', fPackage: 'PyPI package', fType: 'Type', fDesc: 'Description (languages split by |)', fAuthor: 'Author',
         fRepo: 'Repository URL', fCategory: 'Category', fTags: 'Tags (comma separated)', fI18n: 'UI languages', fMinSdk: 'Min SDK version',
         fLogo: 'Logo', fLogoHint: 'Paste an https URL or pick a local image (auto-compressed ≤100KB)',
-        uploadLogo: 'Pick image', logoPreview: 'Current icon',
+        uploadLogo: 'Pick image', logoUploading: 'Uploading…', logoNeedName: 'Enter the module name first', logoPreview: 'Current icon',
         submitModule: 'Submit', saveChanges: 'Save Changes', cancel: 'Cancel',
         submitOk: 'Submitted — listed after review', editOk: 'Changes submitted', dispatched: 'Dispatched — effective shortly',
         cat: { 1: 'Tools', 2: 'Fun', 3: 'Admin', 4: 'Notify', 5: 'AI', 6: 'Platform', 7: 'Analytics' },
@@ -286,7 +289,7 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
         fName: 'モジュール名', fPackage: 'PyPI パッケージ名', fType: 'タイプ', fDesc: '説明（多言語は | で区切る）', fAuthor: '作者',
         fRepo: 'リポジトリ URL', fCategory: 'カテゴリ', fTags: 'タグ（カンマ区切り）', fI18n: 'UI 言語', fMinSdk: '最小 SDK バージョン',
         fLogo: 'Logo', fLogoHint: 'https URL を貼るかローカル画像を選択（≤100KB に自動圧縮）',
-        uploadLogo: '画像を選択', logoPreview: '現在のアイコン',
+        uploadLogo: '画像を選択', logoUploading: 'アップロード中…', logoNeedName: '先にモジュール名を入力してください', logoPreview: '現在のアイコン',
         submitModule: '送信', saveChanges: '変更を保存', cancel: 'キャンセル',
         submitOk: '送信しました。審査後に掲載', editOk: '変更を送信しました', dispatched: '発行しました。まもなく反映',
         cat: { 1: 'ツール', 2: 'エンタメ', 3: '管理', 4: '通知', 5: 'AI', 6: 'プラットフォーム', 7: '分析' },
@@ -370,7 +373,7 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
         fName: 'Название', fPackage: 'Пакет PyPI', fType: 'Тип', fDesc: 'Описание (языки через |)', fAuthor: 'Автор',
         fRepo: 'URL репозитория', fCategory: 'Категория', fTags: 'Теги (через запятую)', fI18n: 'Языки интерфейса', fMinSdk: 'Мин. версия SDK',
         fLogo: 'Logo', fLogoHint: 'Вставьте https URL или выберите файл (автосжатие ≤100KB)',
-        uploadLogo: 'Выбрать файл', logoPreview: 'Текущая иконка',
+        uploadLogo: 'Выбрать файл', logoUploading: 'Загрузка…', logoNeedName: 'Сначала введите имя модуля', logoPreview: 'Текущая иконка',
         submitModule: 'Отправить', saveChanges: 'Сохранить', cancel: 'Отмена',
         submitOk: 'Отправлено — появится после проверки', editOk: 'Правка отправлена', dispatched: 'Отправлено, скоро применится',
         cat: { 1: 'Инструменты', 2: 'Развлечения', 3: 'Управление', 4: 'Уведомления', 5: 'AI', 6: 'Платформы', 7: 'Аналитика' },
@@ -1642,13 +1645,22 @@ function viewModuleDetail(v) {
     fileInput.onchange = async () => {
         const f = fileInput.files[0];
         if (!f) return;
+        // 上传即转 WebP 并落图床，logo 字段保存的是地址而非内联数据
+        const label = fileInput.parentElement;
+        const old = label.textContent;
+        label.textContent = t('logoUploading');
+        fileInput.disabled = true;
         try {
-            const dataUrl = await compressImage(f, 100 * 1024);
-            $('#md-logo-data').value = dataUrl;
-            $('#md-logo').value = '';
+            const dataUrl = await compressImage(f, IMG_LOGO_MAX_BYTES, IMG_LOGO_MAX_SIDE);
+            const d = await api('/api/images', { method: 'POST', body: JSON.stringify({ kind: 'logo', module_name: m.name, module_type: m.type, data_url: dataUrl }) });
+            if (d.error) return toast(d.message || d.error, 1);
+            $('#md-logo').value = d.url;
+            $('#md-logo-data').value = '';
             $('#md-logo-gh').checked = false;
             mdRefresh();
+            markDirty();
         } catch (e) { toast(e.message === 'size' ? t('imgTooLarge') : e.message === 'read' ? t('imgReadFail') : e.message, 1); }
+        finally { label.textContent = old; fileInput.disabled = false; fileInput.value = ''; }
     };
     // 其余字段变更即标记 dirty
     ['md-package', 'md-author', 'md-desc', 'md-repo', 'md-minsdk', 'md-tags', 'md-cat'].forEach(id => {
@@ -1806,14 +1818,24 @@ function viewSubmit(v) {
     $('#sb-logo-file').onchange = async (e) => {
         const f = e.target.files[0];
         if (!f) return;
+        const name = $('#sb-name').value.trim(), type = $('#sb-type').value;
+        if (!/^[A-Za-z0-9_-]+$/.test(name)) { e.target.value = ''; return toast(t('logoNeedName'), 1); }
+        // 预上传：模块尚未进索引，以模块名占位；提交后地址直接生效
+        const label = e.target.parentElement;
+        const old = label.textContent;
+        label.textContent = t('logoUploading');
+        e.target.disabled = true;
         try {
-            const dataUrl = await compressImage(f, 100 * 1024);
-            $('#sb-logo-data').value = dataUrl;
-            $('#sb-logo').value = '';
+            const dataUrl = await compressImage(f, IMG_LOGO_MAX_BYTES, IMG_LOGO_MAX_SIDE);
+            const d = await api('/api/images', { method: 'POST', body: JSON.stringify({ kind: 'logo-pending', module_name: name, module_type: type, data_url: dataUrl }) });
+            if (d.error) return toast(d.message || d.error, 1);
+            $('#sb-logo').value = d.url;
+            $('#sb-logo-data').value = '';
             $('#sb-logo-gh').checked = false;
             refreshPreview();
             markDirty();
         } catch (err) { toast(err.message === 'size' ? t('imgTooLarge') : err.message === 'read' ? t('imgReadFail') : err.message, 1); }
+        finally { label.textContent = old; e.target.disabled = false; e.target.value = ''; }
     };
 
     $('#sb-submit').onclick = () => busy($('#sb-submit'), async () => {
@@ -2171,14 +2193,14 @@ async function viewClaims(v) {
     });
 }
 
-// ═══ 图片压缩（≤maxBytes，多级尺寸/质量回退）═══
-function compressImage(file, maxBytes) {
+// ═══ 图片压缩（输出 WebP；≤maxBytes，多级质量/尺寸回退；长边不超过 maxSide）═══
+function compressImage(file, maxBytes, maxSide = 512) {
     return new Promise((res, rej) => {
         const r = new FileReader();
         r.onload = () => {
             const img = new Image();
             img.onload = () => {
-                let side = Math.min(512, Math.max(img.width, img.height));
+                let side = Math.min(maxSide, Math.max(img.width, img.height));
                 let dataUrl = '';
                 for (let q = 0.85; q >= 0.4; q -= 0.15) {
                     const sc = Math.min(1, side / Math.max(img.width, img.height));
