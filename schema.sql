@@ -154,6 +154,7 @@ CREATE TABLE IF NOT EXISTS module_domains (
     verify_code   TEXT NOT NULL DEFAULT '',
     version       INTEGER NOT NULL DEFAULT 1,    -- 内容缓存版本（+1 即全站失效）
     status        TEXT NOT NULL DEFAULT 'verifying', -- verifying | active | paused | disabled
+    public        INTEGER NOT NULL DEFAULT 1,    -- 是否公开列出到商店目录（0 = 域名可用但不展示）
     created_at    TEXT NOT NULL,
     updated_at    TEXT NOT NULL
 );

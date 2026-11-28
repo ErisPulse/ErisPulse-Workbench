@@ -67,7 +67,7 @@ fTotpHint: '该账户已开启两步验证，操作时需输入认证器动态�
             desc: '为已发布的模块申请免费托管域名：plugin-<前缀>.erisdev.com',
             apply: '申请新域名', mode: '接入方式',
             modeGit: '仓库分支', hintGit: '指定 git 仓库与分支，分支内容直接作为站点展示，支持 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
-            modeUpload: '上传静态站点', hintUpload: '上传站点 zip 包（≤5MB，解压后 ≤20MB）', chooseFile: '选择文件', pickZip: '选择站点 zip 包', verifyExpire: '（超过 7 天未验证将自动释放该前缀）', reupload: '重新上传', errZipSize: 'zip 需 ≤5MB',
+            modeUpload: '上传静态站点', hintUpload: '上传站点 zip 包（≤5MB，解压后 ≤20MB）', chooseFile: '选择文件', publicList: '公开列出到商店目录（取消勾选则仅自己可访问地址）', notPublic: '未公开', pickZip: '选择站点 zip 包', verifyExpire: '（超过 7 天未验证将自动释放该前缀）', reupload: '重新上传', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重定向', hintRedirect: '访问时 301 跳转到你填写的 https 地址',
             modeDns: '自有服务器', hintDns: '把域名解析到你自己的服务器（CNAME / A / AAAA）',
             module: '选择模块', mineOnly: '仅限你拥有的已收录模块',
@@ -151,7 +151,7 @@ fTotpHint: '該帳戶已開啟兩步驗證，操作時需輸入認證器動態�
             desc: '為已發布的模組申請免費託管網域：plugin-<前綴>.erisdev.com',
             apply: '申請新網域', mode: '接入方式',
             modeGit: '儲存庫分支', hintGit: '指定 git 儲存庫與分支，分支內容直接作為站點展示，支援 GitHub / Codeberg / 自建 Gitea·Forgejo / GitLab',
-            modeUpload: '上傳靜態站點', hintUpload: '上傳站點 zip 包（≤5MB，解壓後 ≤20MB）', chooseFile: '選擇檔案', pickZip: '選擇站點 zip 包', verifyExpire: '（超過 7 天未驗證將自動釋放該前綴）', reupload: '重新上傳', errZipSize: 'zip 需 ≤5MB',
+            modeUpload: '上傳靜態站點', hintUpload: '上傳站點 zip 包（≤5MB，解壓後 ≤20MB）', chooseFile: '選擇檔案', publicList: '公開列出到商店目錄（取消勾選則僅自己可訪問地址）', notPublic: '未公開', pickZip: '選擇站點 zip 包', verifyExpire: '（超過 7 天未驗證將自動釋放該前綴）', reupload: '重新上傳', errZipSize: 'zip 需 ≤5MB',
             modeRedirect: '重新導向', hintRedirect: '存取時 301 轉址到你填寫的 https 位址',
             modeDns: '自有伺服器', hintDns: '把網域解析到你自己的伺服器（CNAME / A / AAAA）',
             module: '選擇模組', mineOnly: '僅限你擁有的已收錄模組',
@@ -235,7 +235,7 @@ confirm: 'OK', docsLoading: 'Loading docs…', docsMissing: 'Doc not found', doc
             desc: 'Request a free hosted domain for your published module: plugin-<label>.erisdev.com',
             apply: 'New Domain', mode: 'Integration Mode',
             modeGit: 'Repo branch', hintGit: 'Serve a git repo branch directly as the site — GitHub, Codeberg, self-hosted Gitea/Forgejo and GitLab supported',
-            modeUpload: 'Upload static site', hintUpload: 'Upload a site zip (≤5MB, ≤20MB decompressed)', chooseFile: 'Choose file', pickZip: 'Pick site zip', verifyExpire: '(unverified labels are released after 7 days)', reupload: 'Re-upload', errZipSize: 'zip must be ≤5MB',
+            modeUpload: 'Upload static site', hintUpload: 'Upload a site zip (≤5MB, ≤20MB decompressed)', chooseFile: 'Choose file', publicList: 'List publicly in the store directory (uncheck to keep the address private)', notPublic: 'Unlisted', pickZip: 'Pick site zip', verifyExpire: '(unverified labels are released after 7 days)', reupload: 'Re-upload', errZipSize: 'zip must be ≤5MB',
             modeRedirect: 'Redirect', hintRedirect: '301-redirect visitors to an https URL you provide',
             modeDns: 'Own server', hintDns: 'Point the domain at your own server (CNAME / A / AAAA)',
             module: 'Select Module', mineOnly: 'Only your registered modules',
@@ -319,7 +319,7 @@ fTotpHint: 'このアカウントは 2FA が有効です。操作時に認証コ
             desc: '公開済みモジュールに無料のホストドメインを申請：plugin-<プレフィックス>.erisdev.com',
             apply: '新規ドメイン申請', mode: '接続方式',
             modeGit: 'リポジトリ分支', hintGit: 'git リポジトリのブランチ内容をそのままサイトとして表示。GitHub / Codeberg / 自前 Gitea・Forgejo / GitLab に対応',
-            modeUpload: '静的サイトをアップロード', hintUpload: 'サイト zip をアップロード（≤5MB、解凍後 ≤20MB）', chooseFile: 'ファイルを選択', pickZip: 'サイト zip を選択', verifyExpire: '（7 日間未検証のプレフィックスは自動解放されます）', reupload: '再アップロード', errZipSize: 'zip は 5MB 以下',
+            modeUpload: '静的サイトをアップロード', hintUpload: 'サイト zip をアップロード（≤5MB、解凍後 ≤20MB）', chooseFile: 'ファイルを選択', publicList: 'ストアのディレクトリに公開表示する（未選択で非公開）', notPublic: '非公開', pickZip: 'サイト zip を選択', verifyExpire: '（7 日間未検証のプレフィックスは自動解放されます）', reupload: '再アップロード', errZipSize: 'zip は 5MB 以下',
             modeRedirect: 'リダイレクト', hintRedirect: 'アクセス時に入力した https アドレスへ 301 転送',
             modeDns: '自前サーバー', hintDns: 'ドメインを自分のサーバーへ解決（CNAME / A / AAAA）',
             module: 'モジュールを選択', mineOnly: '自分が所有する登録済みモジュールのみ',
@@ -403,7 +403,7 @@ fTotpHint: 'Для этого аккаунта включена 2FA; дейст�
             desc: 'Бесплатный домен для опубликованного модуля: plugin-<метка>.erisdev.com',
             apply: 'Новый домен', mode: 'Способ подключения',
             modeGit: 'Ветка репозитория', hintGit: 'Содержимое ветки git-репозитория публикуется как сайт — GitHub, Codeberg, свои Gitea/Forgejo и GitLab',
-            modeUpload: 'Загрузить статический сайт', hintUpload: 'Загрузите zip сайта (≤5MB, ≤20MB после распаковки)', chooseFile: 'Выбрать файл', pickZip: 'Выберите zip сайта', verifyExpire: '(неподтверждённые метки освобождаются через 7 дней)', reupload: 'Перезагрузить', errZipSize: 'zip должен быть ≤5MB',
+            modeUpload: 'Загрузить статический сайт', hintUpload: 'Загрузите zip сайта (≤5MB, ≤20MB после распаковки)', chooseFile: 'Выбрать файл', publicList: 'Публично в каталоге магазина (снимите отметку — адрес не публикуется)', notPublic: 'Не опубликовано', pickZip: 'Выберите zip сайта', verifyExpire: '(неподтверждённые метки освобождаются через 7 дней)', reupload: 'Перезагрузить', errZipSize: 'zip должен быть ≤5MB',
             modeRedirect: 'Перенаправление', hintRedirect: '301-редирект на указанный https-адрес',
             modeDns: 'Свой сервер', hintDns: 'Направить домен на свой сервер (CNAME / A / AAAA)',
             module: 'Выберите модуль', mineOnly: 'Только ваши зарегистрированные модули',
@@ -1256,6 +1256,9 @@ async function viewDomains(v) {
                     <span class="muted" style="font-size:12px">.erisdev.com</span>
                 </div>
                 <div class="hint" id="dm-label-hint"></div>
+                <label style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--tx-s);cursor:pointer;user-select:none;margin-top:4px">
+                    <input type="checkbox" id="dm-public" checked> ${esc(dm('publicList'))}
+                </label>
             </div>
             <div id="dm-git-fields">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -1409,16 +1412,19 @@ async function viewDomains(v) {
             body.dns_value = val;
         }
         const d = await withTotp(code => {
+            const isPublic = $('#dm-public').checked;
             if (mode === 'upload') {
                 const fd = new FormData();
                 fd.append('module_name', body.module_name);
                 fd.append('module_type', body.module_type);
                 fd.append('label', body.label);
+                if (!isPublic) fd.append('public', '0');
                 if (code) fd.append('totp_code', code);
                 fd.append('file', $('#dm-zip').files[0]);
                 return api('/api/domains', { method: 'POST', body: fd });
             }
-            const payload = code ? { ...body, totp_code: code } : body;
+            const payload = { ...body, public: isPublic };
+            if (code) payload.totp_code = code;
             return api('/api/domains', { method: 'POST', body: JSON.stringify(payload) });
         });
         if (d.cancelled) return;
@@ -1452,6 +1458,7 @@ async function viewDomains(v) {
             <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                 <a href="https://${esc(row.fqdn)}" target="_blank" rel="noopener" class="mono" style="font-weight:600;font-size:14px;color:inherit">${esc(row.fqdn)}</a>
                 ${statusBadge(row.status)}
+                ${row.public === 0 ? `<span class="badge" style="font-size:11px;padding:2px 8px;border:1px solid var(--bd,#e5e8ec);border-radius:999px;color:var(--tx-s,#5f6b7a)">${esc(dm('notPublic'))}</span>` : ''}
                 <span class="muted" style="font-size:12px">${esc(modeLabel(row.mode))} · ${esc(row.module_name)} (${row.module_type})${staff() && domData.all && row.owner_username ? ' · @' + esc(row.owner_username) : ''}</span>
                 ${rowTargetText(row) ? `<span class="mono muted" style="font-size:11px;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(rowTargetText(row))}</span>` : ''}
                 <span style="flex:1"></span>

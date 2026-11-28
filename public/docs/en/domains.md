@@ -21,6 +21,7 @@ Request a free subdomain for your published module: `plugin-<label>.erisdev.com`
 Hosted Domains page (or a module detail page → Hosted Domains button) → select module → enter label → pick a mode → submit.
 
 - **Label rules**: 2-63 lowercase letters, digits or inner hyphens; official reserved names (www, api, admin, …) are unavailable
+- **Visibility**: with "List publicly in the store directory" checked, a live domain appears on the website market and module pages; uncheck it to keep the address reachable but absent from every public listing
 - **Repo branch mode**: if the repo matches the module's registered repository, it activates immediately; otherwise a verification file is required (see below)
 - **Redirect mode**: active as soon as submitted
 

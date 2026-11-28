@@ -577,6 +577,7 @@ async function ensureTables(db) {
         created_at TEXT NOT NULL, updated_at TEXT NOT NULL
     )`).run().catch(() => {});
     await db.prepare('CREATE INDEX IF NOT EXISTS idx_domains_uid ON module_domains(uid)').run().catch(() => {});
+    await db.prepare('ALTER TABLE module_domains ADD COLUMN public INTEGER NOT NULL DEFAULT 1').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN git_base TEXT').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN route_id TEXT').run().catch(() => {});
     await db.prepare('ALTER TABLE module_domains ADD COLUMN r2_bucket TEXT').run().catch(() => {});
@@ -724,12 +725,14 @@ function scheduleSync(env, ctx, me, ops) {
  */
 async function syncModuleSite(env, ctx, db, row) {
     if (!env.MODULE_REPO_TOKEN || !row || !row.module_name || !row.module_type) return;
-    // 一个模块可有多个域名：本域名下线时，同模块若仍有其它生效域名则改指向它，否则清空
+    // 未公开的域名不进商店目录：本域名 active 且公开才写入；
+    // 本域名下线（或未公开）时改指向同模块其它「生效且公开」的域名，否则清空
+    const publicOk = v => v && v.status === 'active' && !(v.public === 0);
     let site = '';
-    if (row.status === 'active' && row.fqdn) {
+    if (publicOk(row) && row.fqdn) {
         site = 'https://' + row.fqdn;
     } else {
-        const other = await db.prepare("SELECT fqdn FROM module_domains WHERE module_name = ?1 AND module_type = ?2 AND status = 'active' AND fqdn != ?3 ORDER BY created_at ASC LIMIT 1")
+        const other = await db.prepare("SELECT fqdn FROM module_domains WHERE module_name = ?1 AND module_type = ?2 AND status = 'active' AND public != 0 AND fqdn != ?3 ORDER BY created_at ASC LIMIT 1")
             .bind(row.module_name, row.module_type, row.fqdn || '').first();
         if (other) site = 'https://' + other.fqdn;
     }
@@ -928,10 +931,11 @@ async function handleDomainUploadInner(request, env, ctx, db, me) {
         try { await r2DeleteBucket(env, bucket); } catch (e2) { /* 尽力 */ }
         return freason('UPSTREAM', 502, e.reason || 'upstream_fail', String(e.message || e).slice(0, 200));
     }
-    await db.prepare("INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, r2_bucket, r2_bytes, verify_code, version, review, status, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,'upload',?6,?7,'',1,?8,?9,?10,?10)")
-        .bind(fqdn, body.label, me.uid, body.module_name, body.module_type, bucket, rawTotal, needsReview ? 1 : 0, status, now()).run();
+    const isPublic = String(body.public || '') === '0' ? 0 : 1;
+    await db.prepare("INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, r2_bucket, r2_bytes, verify_code, version, review, status, public, created_at, updated_at) VALUES (?1,?2,?3,?4,?5,'upload',?6,?7,'',1,?8,?9,?10,?11,?11)")
+        .bind(fqdn, body.label, me.uid, body.module_name, body.module_type, bucket, rawTotal, needsReview ? 1 : 0, status, isPublic, now()).run();
     await audit(db, me.uid, 'domain.apply', fqdn, 'upload');
-    await syncModuleSite(env, ctx, db, { fqdn, module_name: body.module_name, module_type: body.module_type, status });
+    await syncModuleSite(env, ctx, db, { fqdn, module_name: body.module_name, module_type: body.module_type, status, public: isPublic });
     notifyDomainEvent(env, db, me.uid,
         status === 'reviewing'
             ? '[ErisPulse] 托管域名待管理员审核 / Domain pending review: ' + fqdn
@@ -1243,7 +1247,7 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
             if (path === '/api/public/domains' && method === 'GET') {
                 await ensureTables(db);
                 const mod = url.searchParams.get('module') || '';
-                let sql = "SELECT fqdn, label, module_name, module_type FROM module_domains WHERE status = 'active'";
+                let sql = "SELECT fqdn, label, module_name, module_type FROM module_domains WHERE status = 'active' AND public != 0";
                 if (mod) sql += ' AND module_name = ?1';
                 sql += ' LIMIT 100';
                 const q = mod ? db.prepare(sql).bind(mod) : db.prepare(sql);
@@ -1802,11 +1806,11 @@ button{border:none;border-radius:999px;padding:.7rem 1.6rem;font-size:.95rem;fon
                     return fail('UPSTREAM', 502, String(e.message || e).slice(0, 200));
                 }
 
-                await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, route_id, verify_code, version, review, status, created_at, updated_at)
-                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,1,?17,?18,?19,?19)`)
-                    .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.route_id, vals.verify_code, needsReview ? 1 : 0, status, now()).run();
+                await db.prepare(`INSERT INTO module_domains (fqdn, label, uid, module_name, module_type, mode, git_repo, git_host, git_base, git_branch, target_url, dns_type, dns_value, dns_record_id, route_id, verify_code, version, review, status, public, created_at, updated_at)
+                    VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,1,?17,?18,?19,?20,?20)`)
+                    .bind(fqdn, label, me.uid, String(b.module_name), b.module_type, mode, vals.git_repo, vals.git_host, vals.git_base, vals.git_branch, vals.target_url, vals.dns_type, vals.dns_value, vals.dns_record_id, vals.route_id, vals.verify_code, needsReview ? 1 : 0, status, b.public === false ? 0 : 1, now()).run();
                 await audit(db, me.uid, 'domain.apply', fqdn, mode);
-                await syncModuleSite(env, ctx, db, { fqdn, module_name: String(b.module_name), module_type: b.module_type, status });
+                await syncModuleSite(env, ctx, db, { fqdn, module_name: String(b.module_name), module_type: b.module_type, status, public: b.public === false ? 0 : 1 });
                 if (status === 'active') {
                     notifyDomainEvent(env, db, me.uid, '[ErisPulse] 托管域名已生效 / Domain active: ' + fqdn,
                         '你的模块「' + b.module_name + '」托管域名已生效，现在可以通过 https://' + fqdn + ' 访问。',
